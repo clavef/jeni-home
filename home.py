@@ -13,8 +13,8 @@ if page == "홈":
     st.markdown("### ✅ SNC-KZ 정산 도우미")
     st.write("엑셀 파일을 업로드해 BL별 금액 누락 및 불일치를 자동으로 비교합니다.")
     if st.button("앱 실행하기", type="primary"):
-    st.experimental_set_query_params(page="SNC-KZ 정산 도우미")
-    st.experimental_rerun()
+        st.experimental_set_query_params(page="SNC-KZ 정산 도우미")
+        st.experimental_rerun()
 
     st.markdown("\n\n---")
     st.markdown("ℹ️ 향후 다양한 업무 보조 도구가 이곳에 추가될 예정입니다.")
