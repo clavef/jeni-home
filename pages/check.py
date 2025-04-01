@@ -6,9 +6,9 @@ import zipfile
 import io
 import datetime
 from io import BytesIO
-from shared import show_menu  # ✅ 커스텀 메뉴 불러오기
+from shared import show_menu
 
-show_menu("인스타 언팔체크")  # ✅ 사이드바 메뉴 표시
+show_menu("인스타 언팔체크")
 
 st.title("📱 인스타 언팔체크")
 
@@ -84,8 +84,8 @@ if uploaded_zip:
                     if username not in follower_usernames:
                         results.append({
                             "ID": f"@{username}",
-                            "내가 팔로잉한 날짜": format_time(timestamp),
                             "링크": f"https://instagram.com/{username}",
+                            "내가 팔로잉한 날짜": format_time(timestamp),
                             "timestamp_raw": timestamp or 0
                         })
 
@@ -95,7 +95,7 @@ if uploaded_zip:
                 sort_order = st.radio("정렬 순서 선택", ["최신순", "오래된순"], horizontal=True)
                 results = sorted(results, key=lambda x: x["timestamp_raw"], reverse=(sort_order == "최신순"))
 
-                # 웹용 테이블 출력 (클릭 가능한 링크 포함)
+                # 웹용 테이블 출력
                 display_df = pd.DataFrame(results)
                 display_df["ID"] = display_df.apply(
                     lambda row: f'<a href="{row["링크"]}" target="_blank">{row["ID"]}</a>', axis=1
@@ -107,7 +107,7 @@ if uploaded_zip:
                     unsafe_allow_html=True
                 )
 
-                # XLSX 다운로드 (링크가 아닌 텍스트 ID와 링크 URL을 별도 컬럼으로 포함)
+                # XLSX 다운로드용 텍스트 링크
                 export_df = pd.DataFrame(results)[["ID", "링크", "내가 팔로잉한 날짜"]].copy()
                 output = BytesIO()
                 with pd.ExcelWriter(output, engine="openpyxl") as writer:
