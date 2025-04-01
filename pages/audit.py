@@ -3,11 +3,11 @@ import streamlit as st
 import pandas as pd
 from shared import show_menu
 
-# 메뉴
-show_menu("정산 도우미")
-
 # 왼쪽 정렬
 st.set_page_config(layout="wide")
+
+# 메뉴
+show_menu("정산 도우미")
 
 # 제목
 st.title("✅ 정산 도우미")
