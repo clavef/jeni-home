@@ -1,19 +1,16 @@
 # home.py
 import streamlit as st
+st.set_page_config(page_title="홈", page_icon="🏠", layout="wide")
+
 from shared import show_menu
 
-# 왼쪽 정렬
-st.set_page_config(layout="wide")
-
-# 사이드바 메뉴 표시
 show_menu("홈")
 
-# 메인 콘텐츠
-st.title("🎯 제니앱(Jeni.kr)")
+st.title("🎯 제니앱 (Jeni.kr)")
 st.markdown("**생활과 업무를 편리하게 만들어주는 다양한 도구들을 제니앱에서 만나보세요.**")
 st.markdown("---")
 
-st.markdown("### ✅ 정산 도우미")
+st.markdown("### ✅ SNC-KZ 정산 도우미")
 st.write("엑셀 파일을 업로드해 BL별 금액 누락 및 불일치를 자동으로 비교합니다.")
 st.markdown("왼쪽 메뉴에서 **정산 도우미**를 선택하세요.")
 
