@@ -1,7 +1,7 @@
 import streamlit as st
 
 def show_menu(active_page: str):
-    st.sidebar.title("🧭 제니앱")
+    st.sidebar.title("🎯 제니앱")
     
     pages = {
         "홈": "home.py",
