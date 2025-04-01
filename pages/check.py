@@ -1,5 +1,6 @@
 # pages/check.py
 import streamlit as st
+st.set_page_config(page_title="인스타 언팔체", page_icon="📱", layout="wide")
 import json
 import pandas as pd
 import zipfile
