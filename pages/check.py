@@ -5,6 +5,8 @@ import pandas as pd
 import zipfile
 import io
 import datetime
+import xlsxwriter
+from io import BytesIO
 
 st.title("📱 인스타 언팔체크")
 
@@ -86,7 +88,7 @@ if uploaded_zip:
 
                 st.success(f"총 {len(results)}명이 나를 팔로우하지 않아요.")
 
-                # 클릭 가능한 링크를 HTML 형식으로 표시
+                # 웹용 테이블 출력 (클릭 가능한 링크 포함)
                 display_df = pd.DataFrame(results)
                 display_df["ID"] = display_df.apply(
                     lambda row: f'<a href="{row["링크"]}" target="_blank">{row["ID"]}</a>', axis=1
@@ -94,9 +96,17 @@ if uploaded_zip:
                 st.write("#### 결과:", unsafe_allow_html=True)
                 st.write(display_df[["ID", "내가 팔로잉한 날짜"]].to_html(escape=False, index=False), unsafe_allow_html=True)
 
-                # CSV 다운로드 (링크 제외)
-                df_export = pd.DataFrame(results)[["ID", "내가 팔로잉한 날짜"]]
-                csv = df_export.to_csv(index=False, encoding="utf-8-sig")
-                st.download_button("CSV로 다운로드", data=csv, file_name="not_following_back.csv", mime="text/csv")
+                # XLSX 다운로드 (링크 제외하고 텍스트만)
+                export_df = pd.DataFrame(results)[["ID", "내가 팔로잉한 날짜"]]
+                output = BytesIO()
+                with pd.ExcelWriter(output, engine="xlsxwriter") as writer:
+                    export_df.to_excel(writer, index=False, sheet_name="Unfollow Check")
+                    writer.save()
+                st.download_button(
+                    label="📥 XLSX로 다운로드",
+                    data=output.getvalue(),
+                    file_name="not_following_back.xlsx",
+                    mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+                )
     except Exception as e:
         st.error(f"처리 중 오류 발생: {e}")
