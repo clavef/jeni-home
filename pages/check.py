@@ -28,12 +28,18 @@ def extract_usernames(data):
         return set(entry['string_list_data'][0]['value'] for entry in data)
     return set()
 
+def find_json_file(zip_file, keyword):
+    files = [f for f in zip_file.namelist() if keyword in f and f.endswith(".json")]
+    return files[0] if files else None
+
 if uploaded_zip:
     try:
         with zipfile.ZipFile(uploaded_zip) as z:
-            # followers_1.json 또는 followers.json 찾기
-            followers_file = next((f for f in z.namelist() if "followers" in f and f.endswith(".json")), None)
-            following_file = next((f for f in z.namelist() if "following" in f and f.endswith(".json")), None)
+            st.markdown("#### 🔍 ZIP 파일 내부 목록")
+            st.write(z.namelist())  # 내부 파일 확인용
+
+            followers_file = find_json_file(z, "followers")
+            following_file = find_json_file(z, "following")
 
             if not followers_file or not following_file:
                 st.error("ZIP 파일에서 followers 또는 following JSON 파일을 찾을 수 없습니다.")
