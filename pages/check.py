@@ -4,6 +4,7 @@ import json
 import pandas as pd
 import zipfile
 import io
+import datetime
 
 st.title("📱 인스타 언팔체크")
 
@@ -19,18 +20,34 @@ st.markdown("""
 
 uploaded_zip = st.file_uploader("인스타그램 ZIP 파일 업로드", type="zip")
 
-def extract_usernames(data):
+def extract_following_info(data):
+    results = []
     if isinstance(data, dict):
         for v in data.values():
-            if isinstance(v, list) and all("string_list_data" in item for item in v):
-                return set(entry['string_list_data'][0]['value'] for entry in v)
+            if isinstance(v, list):
+                for entry in v:
+                    if "string_list_data" in entry:
+                        username = entry['string_list_data'][0]['value']
+                        timestamp = entry['string_list_data'][0].get('timestamp')
+                        results.append((username, timestamp))
     elif isinstance(data, list):
-        return set(entry['string_list_data'][0]['value'] for entry in data)
-    return set()
+        for entry in data:
+            if "string_list_data" in entry:
+                username = entry['string_list_data'][0]['value']
+                timestamp = entry['string_list_data'][0].get('timestamp')
+                results.append((username, timestamp))
+    return results
+
+def format_time(ts):
+    if not ts:
+        return "-"
+    dt = datetime.datetime.fromtimestamp(ts)
+    delta_days = (datetime.datetime.now() - dt).days
+    formatted = dt.strftime("%Y.%m.%d %H:%M")
+    return f"{delta_days}일 전, {formatted}"
 
 def find_json_file(zip_file, keyword):
     files = [f for f in zip_file.namelist() if keyword in f and f.endswith(".json")]
-    # followers_1.json 보다 following.json이 우선되면 안 되므로 정확한 조건 지정
     if keyword == "followers":
         files = [f for f in files if "followers_1.json" in f]
     elif keyword == "following":
@@ -41,7 +58,7 @@ if uploaded_zip:
     try:
         with zipfile.ZipFile(uploaded_zip) as z:
             st.markdown("#### 🔍 ZIP 파일 내부 목록")
-            st.write(z.namelist())  # 내부 파일 확인용
+            st.write(z.namelist())
 
             followers_file = find_json_file(z, "followers")
             following_file = find_json_file(z, "following")
@@ -54,16 +71,23 @@ if uploaded_zip:
                 with z.open(following_file) as f:
                     following_data = json.load(f)
 
-                follower_usernames = extract_usernames(followers_data)
-                following_usernames = extract_usernames(following_data)
+                follower_usernames = set([entry['string_list_data'][0]['value']
+                                          for entry in extract_following_info(followers_data)])
+                following_info = extract_following_info(following_data)
 
-                not_following_back = sorted(list(following_usernames - follower_usernames))
+                results = []
+                for username, timestamp in following_info:
+                    if username not in follower_usernames:
+                        results.append({
+                            "ID": f"[@{username}](https://instagram.com/{username})",
+                            "내가 팔로잉한 날짜": format_time(timestamp)
+                        })
 
-                st.success(f"총 {len(not_following_back)}명이 나를 팔로우하지 않아요.")
-                st.write(not_following_back)
+                st.success(f"총 {len(results)}명이 나를 팔로우하지 않아요.")
+                st.dataframe(pd.DataFrame(results))
 
-                df = pd.DataFrame(not_following_back, columns=["Not Following Back"])
-                csv = df.to_csv(index=False).encode('utf-8')
+                df_export = pd.DataFrame(results)
+                csv = df_export.to_csv(index=False).encode('utf-8')
                 st.download_button("CSV로 다운로드", data=csv, file_name="not_following_back.csv", mime="text/csv")
     except Exception as e:
         st.error(f"처리 중 오류 발생: {e}")
