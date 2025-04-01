@@ -14,7 +14,7 @@ def main():
 
     st.markdown("\n\n---")
     st.markdown("ℹ️ 향후 다양한 업무 보조 도구가 이곳에 추가될 예정입니다.")
-    st.caption("© 2025 제니앱 · 문의: admin@jeni.kr")
+    st.caption("© 2025 제니앱 · 문의: id@matt.kr")
 
 if __name__ == "__main__":
     main()
