@@ -1,6 +1,6 @@
 import streamlit as st
 
-st.set_page_config(page_title="제니앱 (Jeni.kr)", layout="wide")
+st.set_page_config(page_title="제니앱 (Jeni.kr)", page_icon="🎯", layout="wide")
 
 st.sidebar.title("🧭 제니앱 메뉴")
 page = st.sidebar.radio("원하는 앱을 선택하세요", ["홈", "SNC-KZ 정산 도우미"])
@@ -19,7 +19,7 @@ if page == "홈":
 """, unsafe_allow_html=True)
 
     st.markdown("\n\n---")
-    st.markdown("ℹ️ 향후 다양한 앱이 이곳에 추가될 예정입니다.")
+    st.markdown("ℹ️ 향후 다양한 업무 보조 도구가 이곳에 추가될 예정입니다.")
     st.caption("© 2025 제니앱 · 문의: id@matt.kr")
 
 elif page == "SNC-KZ 정산 도우미":
