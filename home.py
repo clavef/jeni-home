@@ -1,18 +1,20 @@
 import streamlit as st
+from PIL import Image
 
 def main():
-    st.set_page_config(page_title="제니앱 도구 모음", layout="centered")
+    st.set_page_config(page_title="제니앱 (Jeni.kr)", layout="centered")
 
-    st.title("🧰 제니앱 도구 모음")
+    st.title("🎯 제니앱 (Jeni.kr)")
+    st.markdown("**업무 효율을 높이는 실용적인 도구들을 한곳에, 제니앱에서 만나보세요.**")
     st.markdown("---")
 
     st.markdown("### ✅ SNC-KZ 정산 도우미")
     st.write("엑셀 파일을 업로드해 BL별 금액 누락 및 불일치를 자동으로 비교합니다.")
-    st.link_button("앱 실행하기", url="https://snc-kz-checker.streamlit.app/", use_container_width=True)
+    st.link_button("앱 실행하기", url="https://jeni-kz.streamlit.app", use_container_width=True)
 
     st.markdown("\n\n---")
     st.markdown("ℹ️ 향후 다양한 업무 보조 도구가 이곳에 추가될 예정입니다.")
-    st.caption("문의: id@matt.kr")
+    st.caption("© 2025 제니앱 · 문의: admin@jeni.kr")
 
 if __name__ == "__main__":
     main()
