@@ -19,6 +19,15 @@ st.markdown("""
 
 uploaded_zip = st.file_uploader("인스타그램 ZIP 파일 업로드", type="zip")
 
+def extract_usernames(data):
+    if isinstance(data, dict):
+        for v in data.values():
+            if isinstance(v, list) and all("string_list_data" in item for item in v):
+                return set(entry['string_list_data'][0]['value'] for entry in v)
+    elif isinstance(data, list):
+        return set(entry['string_list_data'][0]['value'] for entry in data)
+    return set()
+
 if uploaded_zip:
     try:
         with zipfile.ZipFile(uploaded_zip) as z:
@@ -34,14 +43,8 @@ if uploaded_zip:
                 with z.open(following_file) as f:
                     following_data = json.load(f)
 
-                follower_usernames = set([
-                    entry['string_list_data'][0]['value']
-                    for entry in followers_data.get('relationships_followers', [])
-                ])
-                following_usernames = set([
-                    entry['string_list_data'][0]['value']
-                    for entry in following_data.get('relationships_following', [])
-                ])
+                follower_usernames = extract_usernames(followers_data)
+                following_usernames = extract_usernames(following_data)
 
                 not_following_back = sorted(list(following_usernames - follower_usernames))
 
