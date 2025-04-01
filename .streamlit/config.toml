@@ -1,0 +1,11 @@
+[theme]
+base="light"
+
+[server]
+headless = true
+
+[client]
+showSidebarNavigation = true
+
+[ui]
+page_title = "🎯 제니앱 (Jeni.kr)"
