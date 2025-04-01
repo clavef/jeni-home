@@ -1,6 +1,6 @@
 import streamlit as st
 
-st.set_page_config(page_title="제니앱 (Jeni.kr)", layout="wide")", layout="centered")
+st.set_page_config(page_title="제니앱 (Jeni.kr)", layout="wide")
 
 st.sidebar.title("🧭 제니앱 메뉴")
 page = st.sidebar.radio("원하는 앱을 선택하세요", ["홈", "SNC-KZ 정산 도우미"])
