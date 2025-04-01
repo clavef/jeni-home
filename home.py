@@ -7,7 +7,7 @@ query_params = st.query_params
 default_page = query_params.get("page", "홈")
 if default_page != "홈":
     st.query_params.clear()
-page = st.sidebar.radio("원하는 앱을 선택하세요", ["홈", "SNC-KZ 정산 도우미"], index=0 if default_page == "홈" else 1)
+page = st.sidebar.radio("원하는 앱을 선택하세요", ["홈", "audit"], index=0 if default_page == "홈" else 1)
 
 if page == "홈":
     st.title("🎯 제니앱 (Jeni.kr)")
@@ -17,14 +17,14 @@ if page == "홈":
     st.markdown("### ✅ SNC-KZ 정산 도우미")
     st.write("엑셀 파일을 업로드해 BL별 금액 누락 및 불일치를 자동으로 비교합니다.")
     if st.button("앱 실행하기", type="primary"):
-        st.query_params["page"] = "SNC-KZ 정산 도우미"
+        st.query_params["page"] = "audit"
         st.rerun()
 
     st.markdown("\n\n---")
     st.markdown("ℹ️ 향후 다양한 업무 보조 도구가 이곳에 추가될 예정입니다.")
     st.caption("© 2025 제니앱 · 문의: id@matt.kr")
 
-elif page == "SNC-KZ 정산 도우미":
+elif page == "audit":
     import pandas as pd
 
     def compare_amount_lists_fixed(kz_list, snc_list):
@@ -46,7 +46,7 @@ elif page == "SNC-KZ 정산 도우미":
             style[2] = 'background-color: #d6eaff'
         return style
 
-    st.title("✅ SNC-KZ 정산 도우미")
+    st.title("✅ Audit")
     st.write("KZ와 SNC의 엑셀 파일을 업로드하여 MBL별 금액 비교 결과를 확인하세요.")
 
     file_kz = st.file_uploader("KZ 엑셀 파일 업로드 (.xlsx)", type=["xlsx"], key="kz")
