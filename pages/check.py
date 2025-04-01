@@ -7,6 +7,10 @@ import io
 import datetime
 from io import BytesIO
 from shared import show_menu
+import openpyxl
+from openpyxl.utils.dataframe import dataframe_to_rows
+from openpyxl.styles import Alignment
+from openpyxl.worksheet.hyperlink import Hyperlink
 
 show_menu("인스타 언팔체크")
 
@@ -107,11 +111,27 @@ if uploaded_zip:
                     unsafe_allow_html=True
                 )
 
-                # XLSX 다운로드용 텍스트 링크
-                export_df = pd.DataFrame(results)[["ID", "링크", "내가 팔로잉한 날짜"]].copy()
+                # XLSX 다운로드 (하이퍼링크 포함)
+                df_export = pd.DataFrame(results)[["ID", "링크", "내가 팔로잉한 날짜"]]
+                wb = openpyxl.Workbook()
+                ws = wb.active
+                ws.title = "Unfollow Check"
+
+                ws.append(["ID", "내가 팔로잉한 날짜"])
+
+                for row in df_export.itertuples(index=False):
+                    cell = ws.cell(row=ws.max_row+1, column=1, value=row.ID)
+                    cell.hyperlink = row.링크
+                    cell.style = "Hyperlink"
+                    ws.cell(row=cell.row, column=2, value=row._3)
+
+                # 정렬 왼쪽
+                for col in ws.columns:
+                    for cell in col:
+                        cell.alignment = Alignment(horizontal="left")
+
                 output = BytesIO()
-                with pd.ExcelWriter(output, engine="openpyxl") as writer:
-                    export_df.to_excel(writer, index=False, sheet_name="Unfollow Check")
+                wb.save(output)
                 st.download_button(
                     label="📥 XLSX로 다운로드",
                     data=output.getvalue(),
