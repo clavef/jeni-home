@@ -1,6 +1,6 @@
 # pages/audit.py
 import streamlit as st
-st.set_page_config(page_title="정산 도우미", page_icon="🎯", layout="wide")
+st.set_page_config(page_title="정산 도우미", page_icon="📊", layout="wide")
 
 import pandas as pd
 from shared import show_menu
