@@ -2,11 +2,11 @@
 import streamlit as st
 from shared import show_menu
 
-# 사이드바 메뉴 표시
-show_menu("홈")
-
 # 왼쪽 정렬
 st.set_page_config(layout="wide")
+
+# 사이드바 메뉴 표시
+show_menu("홈")
 
 # 메인 콘텐츠
 st.title("🎯 제니앱(Jeni.kr)")
