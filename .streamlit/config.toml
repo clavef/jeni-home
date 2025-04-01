@@ -1,0 +1,3 @@
+# .streamlit/config.toml
+[ui]
+hideSidebarNav = true
