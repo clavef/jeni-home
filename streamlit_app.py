@@ -1,4 +1,4 @@
-# Home.py
+# streamlit_app.py
 import streamlit as st
 from shared import show_menu
 
