@@ -1,1 +1,1 @@
-# jeni-home
+# jeniapp
