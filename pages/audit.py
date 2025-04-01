@@ -1,19 +1,15 @@
 # pages/audit.py
 import streamlit as st
+st.set_page_config(layout="wide")
+
 import pandas as pd
 from shared import show_menu
 
-# 왼쪽 정렬
-st.set_page_config(layout="wide")
-
-# 메뉴
 show_menu("정산 도우미")
 
-# 제목
-st.title("✅ 정산 도우미")
+st.title("✅ SNC-KZ 정산 도우미")
 st.write("KZ와 SNC의 엑셀 파일을 업로드하여 MBL별 금액 비교 결과를 확인하세요.")
 
-# 파일 업로드
 file_kz = st.file_uploader("KZ 엑셀 파일 업로드 (.xlsx)", type=["xlsx"], key="kz")
 file_snc = st.file_uploader("SNC 엑셀 파일 업로드 (.xlsx)", type=["xlsx"], key="snc")
 
@@ -22,7 +18,6 @@ if file_kz and file_snc:
         df_kz = pd.read_excel(file_kz)
         df_snc = pd.read_excel(file_snc)
 
-        # 기본 열 체크
         if not {'M.BL#', '승인금액'}.issubset(df_kz.columns):
             st.error("❌ KZ 파일에 'M.BL#' 또는 '승인금액' 열이 없습니다.")
             st.stop()
@@ -30,7 +25,6 @@ if file_kz and file_snc:
             st.error("❌ SNC 파일에 'H.B/L NO' 또는 'Unnamed: 11' 열이 없습니다.")
             st.stop()
 
-        # 정제
         df_kz = df_kz[['M.BL#', '승인금액']].copy()
         df_kz.columns = ['MBL', '승인금액']
         df_kz.dropna(subset=['MBL'], inplace=True)
@@ -43,14 +37,11 @@ if file_kz and file_snc:
         df_snc['MBL'] = df_snc['MBL'].astype(str).str.strip()
         df_snc['금액_SNC'] = pd.to_numeric(df_snc['금액_SNC'], errors='coerce').fillna(0)
 
-        # 병합 기준 MBL 목록
         all_mbls = pd.Series(sorted(set(df_kz['MBL']) | set(df_snc['MBL'])), name='MBL')
 
-        # 그룹화 후 정렬 리스트화
         kz_grouped = df_kz.groupby('MBL')['승인금액'].apply(lambda x: sorted(x.tolist())).reset_index()
         snc_grouped = df_snc.groupby('MBL')['금액_SNC'].apply(lambda x: sorted(x.tolist())).reset_index()
 
-        # 병합 및 비교
         compare_df = pd.merge(all_mbls.to_frame(), kz_grouped, on='MBL', how='left')
         compare_df = pd.merge(compare_df, snc_grouped, on='MBL', how='left')
 
@@ -63,22 +54,22 @@ if file_kz and file_snc:
         result_df = compare_df[compare_df['비고'] != '일치'].sort_values(by='MBL')
         result_df.columns = ['MBL#', 'KZ금액', 'SNC금액', '비고']
 
+        result_df.insert(0, '번호', range(1, len(result_df) + 1))  # 번호 컬럼 추가
+
         def highlight(row):
-            style = [''] * 4
+            style = [''] * len(row)
             if row['비고'] == '금액 불일치':
-                style[1] = 'background-color: #ffd6d6'
                 style[2] = 'background-color: #ffd6d6'
+                style[3] = 'background-color: #ffd6d6'
             elif row['비고'] == 'KZ 미승인':
-                style[1] = 'background-color: #fff3cd'
+                style[2] = 'background-color: #fff3cd'
             elif row['비고'] == 'SNC 미입력':
-                style[2] = 'background-color: #d6eaff'
+                style[3] = 'background-color: #d6eaff'
             return style
 
-        # 출력
-        st.subheader("비교 결과 (불일치 또는 미승인/미입력 항목)")
+        st.subheader(f"비교 결과 (불일치 또는 누락 항목 총 {len(result_df)}건)")
         st.dataframe(result_df.style.apply(highlight, axis=1), use_container_width=True)
 
-        # 다운로드
         csv = result_df.to_csv(index=False).encode('utf-8-sig')
         st.download_button("엑셀로 다운로드", data=csv, file_name="MBL_비교_결과.csv", mime="text/csv")
 
