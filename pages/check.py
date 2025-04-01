@@ -107,15 +107,15 @@ if uploaded_zip:
                     unsafe_allow_html=True
                 )
 
-                # XLSX 다운로드 (링크 제외하고 텍스트만)
-                export_df = display_df[["ID", "내가 팔로잉한 날짜"]].copy()
+                # XLSX 다운로드 (링크가 아닌 텍스트 ID와 링크 URL을 별도 컬럼으로 포함)
+                export_df = pd.DataFrame(results)[["ID", "링크", "내가 팔로잉한 날짜"]].copy()
                 output = BytesIO()
                 with pd.ExcelWriter(output, engine="openpyxl") as writer:
                     export_df.to_excel(writer, index=False, sheet_name="Unfollow Check")
                 st.download_button(
                     label="📥 XLSX로 다운로드",
                     data=output.getvalue(),
-                    file_name="not_following_back.xlsx",
+                    file_name="jeniapp_check.xlsx",
                     mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
                 )
     except Exception as e:
