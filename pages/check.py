@@ -5,7 +5,6 @@ import pandas as pd
 import zipfile
 import io
 import datetime
-import xlsxwriter
 from io import BytesIO
 
 st.title("📱 인스타 언팔체크")
@@ -99,9 +98,8 @@ if uploaded_zip:
                 # XLSX 다운로드 (링크 제외하고 텍스트만)
                 export_df = pd.DataFrame(results)[["ID", "내가 팔로잉한 날짜"]]
                 output = BytesIO()
-                with pd.ExcelWriter(output, engine="xlsxwriter") as writer:
+                with pd.ExcelWriter(output, engine="openpyxl") as writer:
                     export_df.to_excel(writer, index=False, sheet_name="Unfollow Check")
-                    writer.save()
                 st.download_button(
                     label="📥 XLSX로 다운로드",
                     data=output.getvalue(),
