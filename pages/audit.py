@@ -56,6 +56,11 @@ if file_kz and file_snc:
 
         result_df.insert(0, '번호', range(1, len(result_df) + 1))  # 번호 컬럼 추가
 
+        # 합계 표시
+        kz_total = sum([sum(x) if isinstance(x, list) else 0 for x in compare_df['승인금액']])
+        snc_total = sum([sum(x) if isinstance(x, list) else 0 for x in compare_df['금액_SNC']])
+        st.markdown(f"**🔢 KZ 금액 합계:** {kz_total:,.0f}  |  **SNC 금액 합계:** {snc_total:,.0f}")
+
         def highlight(row):
             style = [''] * len(row)
             if row['비고'] == '금액 불일치':
