@@ -30,6 +30,11 @@ def extract_usernames(data):
 
 def find_json_file(zip_file, keyword):
     files = [f for f in zip_file.namelist() if keyword in f and f.endswith(".json")]
+    # followers_1.json 보다 following.json이 우선되면 안 되므로 정확한 조건 지정
+    if keyword == "followers":
+        files = [f for f in files if "followers_1.json" in f]
+    elif keyword == "following":
+        files = [f for f in files if f.endswith("following.json")]
     return files[0] if files else None
 
 if uploaded_zip:
