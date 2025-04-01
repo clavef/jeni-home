@@ -11,7 +11,6 @@ from shared import show_menu
 import openpyxl
 from openpyxl.utils.dataframe import dataframe_to_rows
 from openpyxl.styles import Alignment
-from openpyxl.worksheet.hyperlink import Hyperlink
 
 show_menu("인스타 언팔체크")
 
@@ -120,13 +119,12 @@ if uploaded_zip:
 
                 ws.append(["ID", "내가 팔로잉한 날짜"])
 
-                for row in df_export.itertuples(index=False):
-                    cell = ws.cell(row=ws.max_row+1, column=1, value=row.ID)
-                    cell.hyperlink = row.링크
-                    cell.style = "Hyperlink"
-                    ws.cell(row=cell.row, column=2, value=row._3)
+                for i in range(len(df_export)):
+                    id_cell = ws.cell(row=i+2, column=1, value=df_export.iloc[i]["ID"])
+                    id_cell.hyperlink = df_export.iloc[i]["링크"]
+                    id_cell.style = "Hyperlink"
+                    date_cell = ws.cell(row=i+2, column=2, value=df_export.iloc[i]["내가 팔로잉한 날짜"])
 
-                # 정렬 왼쪽
                 for col in ws.columns:
                     for cell in col:
                         cell.alignment = Alignment(horizontal="left")
