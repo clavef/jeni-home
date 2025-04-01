@@ -5,6 +5,9 @@ from shared import show_menu
 # 사이드바 메뉴 표시
 show_menu("홈")
 
+# 왼쪽 정렬
+st.set_page_config(layout="wide")
+
 # 메인 콘텐츠
 st.title("🎯 제니앱(Jeni.kr)")
 st.markdown("**생활과 업무를 편리하게 만들어주는 다양한 도구들을 제니앱에서 만나보세요.**")
