@@ -27,15 +27,17 @@ def extract_following_info(data):
             if isinstance(v, list):
                 for entry in v:
                     if "string_list_data" in entry:
-                        username = entry['string_list_data'][0]['value']
-                        timestamp = entry['string_list_data'][0].get('timestamp')
-                        results.append((username, timestamp))
+                        string_data = entry["string_list_data"][0]
+                        username = string_data.get("value")
+                        timestamp = string_data.get("timestamp")
+                        results.append({"username": username, "timestamp": timestamp})
     elif isinstance(data, list):
         for entry in data:
             if "string_list_data" in entry:
-                username = entry['string_list_data'][0]['value']
-                timestamp = entry['string_list_data'][0].get('timestamp')
-                results.append((username, timestamp))
+                string_data = entry["string_list_data"][0]
+                username = string_data.get("value")
+                timestamp = string_data.get("timestamp")
+                results.append({"username": username, "timestamp": timestamp})
     return results
 
 def format_time(ts):
@@ -71,12 +73,13 @@ if uploaded_zip:
                 with z.open(following_file) as f:
                     following_data = json.load(f)
 
-                follower_usernames = set([entry['string_list_data'][0]['value']
-                                          for entry in extract_following_info(followers_data)])
+                follower_usernames = set([entry["username"] for entry in extract_following_info(followers_data)])
                 following_info = extract_following_info(following_data)
 
                 results = []
-                for username, timestamp in following_info:
+                for entry in following_info:
+                    username = entry["username"]
+                    timestamp = entry["timestamp"]
                     if username not in follower_usernames:
                         results.append({
                             "ID": f"[@{username}](https://instagram.com/{username})",
