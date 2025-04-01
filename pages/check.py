@@ -59,9 +59,6 @@ def find_json_file(zip_file, keyword):
 if uploaded_zip:
     try:
         with zipfile.ZipFile(uploaded_zip) as z:
-            st.markdown("#### 🔍 ZIP 파일 내부 목록")
-            st.write(z.namelist())
-
             followers_file = find_json_file(z, "followers")
             following_file = find_json_file(z, "following")
 
@@ -82,7 +79,7 @@ if uploaded_zip:
                     timestamp = entry["timestamp"]
                     if username not in follower_usernames:
                         results.append({
-                            "ID": f"[@{username}](https://instagram.com/{username})",
+                            "ID": f"@[{username}](https://instagram.com/{username})",
                             "내가 팔로잉한 날짜": format_time(timestamp)
                         })
 
