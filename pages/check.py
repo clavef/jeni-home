@@ -82,10 +82,15 @@ if uploaded_zip:
                         results.append({
                             "ID": f"@{username}",
                             "내가 팔로잉한 날짜": format_time(timestamp),
-                            "링크": f"https://instagram.com/{username}"
+                            "링크": f"https://instagram.com/{username}",
+                            "timestamp_raw": timestamp or 0
                         })
 
                 st.success(f"총 {len(results)}명이 나를 팔로우하지 않아요.")
+
+                # 정렬 옵션
+                sort_order = st.radio("정렬 순서 선택", ["최신순", "오래된순"], horizontal=True)
+                results = sorted(results, key=lambda x: x["timestamp_raw"], reverse=(sort_order == "최신순"))
 
                 # 웹용 테이블 출력 (클릭 가능한 링크 포함)
                 display_df = pd.DataFrame(results)
@@ -93,10 +98,14 @@ if uploaded_zip:
                     lambda row: f'<a href="{row["링크"]}" target="_blank">{row["ID"]}</a>', axis=1
                 )
                 st.write("#### 결과:", unsafe_allow_html=True)
-                st.write(display_df[["ID", "내가 팔로잉한 날짜"]].to_html(escape=False, index=False), unsafe_allow_html=True)
+                st.write(
+                    display_df[["ID", "내가 팔로잉한 날짜"]]
+                    .to_html(escape=False, index=False, justify="left"),
+                    unsafe_allow_html=True
+                )
 
                 # XLSX 다운로드 (링크 제외하고 텍스트만)
-                export_df = pd.DataFrame(results)[["ID", "내가 팔로잉한 날짜"]]
+                export_df = display_df[["ID", "내가 팔로잉한 날짜"]].copy()
                 output = BytesIO()
                 with pd.ExcelWriter(output, engine="openpyxl") as writer:
                     export_df.to_excel(writer, index=False, sheet_name="Unfollow Check")
