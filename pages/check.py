@@ -6,6 +6,9 @@ import zipfile
 import io
 import datetime
 from io import BytesIO
+from shared import show_menu  # ✅ 커스텀 메뉴 불러오기
+
+show_menu("인스타 언팔체크")  # ✅ 사이드바 메뉴 표시
 
 st.title("📱 인스타 언팔체크")
 
