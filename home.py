@@ -3,7 +3,9 @@ import streamlit as st
 st.set_page_config(page_title="제니앱 (Jeni.kr)", page_icon="🎯", layout="wide")
 
 st.sidebar.title("🧭 제니앱 메뉴")
-page = st.sidebar.radio("원하는 앱을 선택하세요", ["홈", "SNC-KZ 정산 도우미"])
+query_params = st.query_params
+default_page = query_params.get("page", "홈")
+page = st.sidebar.radio("원하는 앱을 선택하세요", ["홈", "SNC-KZ 정산 도우미"], index=0 if default_page == "홈" else 1)
 
 if page == "홈":
     st.title("🎯 제니앱 (Jeni.kr)")
