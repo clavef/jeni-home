@@ -54,12 +54,14 @@ if file_kz and file_snc:
         result_df = compare_df[compare_df['비고'] != '일치'].sort_values(by='MBL')
         result_df.columns = ['MBL#', 'KZ금액', 'SNC금액', '비고']
 
-        result_df.insert(0, '번호', range(1, len(result_df) + 1))  # 번호 컬럼 추가
+        result_df.insert(0, '번호', range(1, len(result_df) + 1))
 
-        # 합계 표시
         kz_total = sum([sum(x) if isinstance(x, list) else 0 for x in compare_df['승인금액']])
         snc_total = sum([sum(x) if isinstance(x, list) else 0 for x in compare_df['금액_SNC']])
-        st.markdown(f"**🔢 KZ 금액 합계:** {kz_total:,.0f}  |  **SNC 금액 합계:** {snc_total:,.0f}")
+        diff = kz_total - snc_total
+        st.markdown(f"**🔢 KZ 금액 합계:** {kz_total:,.0f}  ")
+        st.markdown(f"**🔢 SNC 금액 합계:** {snc_total:,.0f}  ")
+        st.markdown(f"**➖ 차액 (KZ - SNC):** {diff:,.0f}")
 
         def highlight(row):
             style = [''] * len(row)
