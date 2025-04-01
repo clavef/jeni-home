@@ -13,10 +13,9 @@ if page == "홈":
     st.markdown("### ✅ SNC-KZ 정산 도우미")
     st.write("엑셀 파일을 업로드해 BL별 금액 누락 및 불일치를 자동으로 비교합니다.")
     st.markdown("""
-<form action="" method="get">
-  <input type="hidden" name="page" value="SNC-KZ 정산 도우미">
-  <button type="submit" style="padding:10px 20px; font-size:16px;">앱 실행하기</button>
-</form>
+if st.button("앱 실행하기", type="primary"):
+    st.experimental_set_query_params(page="SNC-KZ 정산 도우미")
+    st.experimental_rerun()
 """, unsafe_allow_html=True)
 
     st.markdown("\n\n---")
