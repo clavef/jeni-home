@@ -2,10 +2,6 @@ import streamlit as st
 
 st.set_page_config(page_title="제니앱 (Jeni.kr)", page_icon="🎯", layout="wide")
 
-st.sidebar.title("🧭 제니앱 메뉴")
-st.sidebar.page_link("home.py", label="홈")
-st.sidebar.page_link("pages/1_audit.py", label="SNC-KZ 정산 도우미")
-
 st.title("🎯 제니앱 (Jeni.kr)")
 st.markdown("**생활과 업무를 편리하게 만들어주는 다양한 도구들을 제니앱에서 만나보세요.**")
 st.markdown("---")
