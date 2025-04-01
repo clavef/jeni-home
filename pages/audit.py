@@ -13,6 +13,9 @@ st.write("KZ와 SNC의 엑셀 파일을 업로드하여 MBL별 금액 비교 결
 file_kz = st.file_uploader("KZ 엑셀 파일 업로드 (.xlsx)", type=["xlsx"], key="kz")
 file_snc = st.file_uploader("SNC 엑셀 파일 업로드 (.xlsx)", type=["xlsx"], key="snc")
 
+# 수동 입력 필드
+manual_kz = st.number_input("KZ 미승인 금액 수동 입력 (원)", min_value=0, value=0, step=10000, format="%d")
+
 if file_kz and file_snc:
     try:
         df_kz = pd.read_excel(file_kz)
@@ -56,11 +59,11 @@ if file_kz and file_snc:
 
         result_df.insert(0, '번호', range(1, len(result_df) + 1))
 
-        kz_total = sum([sum(x) if isinstance(x, list) else 0 for x in compare_df['승인금액']])
+        kz_total = sum([sum(x) if isinstance(x, list) else 0 for x in compare_df['승인금액']]) + manual_kz
         snc_total = sum([sum(x) if isinstance(x, list) else 0 for x in compare_df['금액_SNC']])
         diff = kz_total - snc_total
-        st.markdown(f"**🔢 KZ 금액 합계:** {kz_total:,.0f}  ")
-        st.markdown(f"**🔢 SNC 금액 합계:** {snc_total:,.0f}  ")
+        st.markdown(f"**🔢 KZ 금액 합계:** {kz_total:,.0f} (수동 입력 포함)")
+        st.markdown(f"**🔢 SNC 금액 합계:** {snc_total:,.0f}")
         st.markdown(f"**➖ 차액 (KZ - SNC):** {diff:,.0f}")
 
         def highlight(row):
