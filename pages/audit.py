@@ -55,8 +55,8 @@ if file_kz and file_snc:
         compare_df = pd.merge(compare_df, snc_grouped, on='MBL', how='left')
 
         def compare_lists(kz_list, snc_list):
-            if not isinstance(kz_list, list): return 'KZ 누락'
-            if not isinstance(snc_list, list): return 'SNC 누락'
+            if not isinstance(kz_list, list): return 'KZ 미입력'
+            if not isinstance(snc_list, list): return 'SNC 미입력'
             return '일치' if sorted(kz_list) == sorted(snc_list) else '금액 불일치'
 
         compare_df['비고'] = compare_df.apply(lambda row: compare_lists(row['승인금액'], row['금액_SNC']), axis=1)
@@ -68,14 +68,14 @@ if file_kz and file_snc:
             if row['비고'] == '금액 불일치':
                 style[1] = 'background-color: #ffd6d6'
                 style[2] = 'background-color: #ffd6d6'
-            elif row['비고'] == 'KZ 누락':
+            elif row['비고'] == 'KZ 미입력':
                 style[1] = 'background-color: #fff3cd'
-            elif row['비고'] == 'SNC 누락':
+            elif row['비고'] == 'SNC 미입력':
                 style[2] = 'background-color: #d6eaff'
             return style
 
         # 출력
-        st.subheader("비교 결과 (불일치 또는 누락 항목)")
+        st.subheader("비교 결과 (불일치 또는 미입력 항목)")
         st.dataframe(result_df.style.apply(highlight, axis=1), use_container_width=True)
 
         # 다운로드
