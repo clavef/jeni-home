@@ -1,13 +1,13 @@
 # pages/audit.py
 import streamlit as st
-st.set_page_config(layout="wide")
+st.set_page_config(page_title="정산 도우미", page_icon="🎯", layout="wide")
 
 import pandas as pd
 from shared import show_menu
 
 show_menu("정산 도우미")
 
-st.title("✅ 정산 도우미")
+st.title("🎯 정산 도우미")
 st.write("KZ와 SNC의 엑셀 파일을 업로드하여 MBL별 금액 비교 결과를 확인하세요.")
 
 file_kz = st.file_uploader("KZ 엑셀 파일 업로드 (.xlsx)", type=["xlsx"], key="kz")
