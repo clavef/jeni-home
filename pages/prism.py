@@ -219,33 +219,36 @@ def parse_hana(file):
 # --- 삼성카드 ---
 def parse_samsung(file):
     try:
+        import pandas as pd
+
         xls = pd.ExcelFile(file)
-        df = xls.parse(xls.sheet_names[1], skiprows=0)  # 상세내역은 두 번째 시트
+        df = xls.parse(xls.sheet_names[1])  # 두 번째 시트
 
-        df = df[["승인일자", "승인시각", "가맹점명", "승인금액(원)"]].copy()
+        # 필요한 열만 추출
+        df = df[["승인일자", "승인시각", "가맹점명", "승인금액(원)"]].dropna()
 
-        df = df.dropna(subset=["승인일자", "승인금액(원)"])
-        df["승인금액(원)"] = df["승인금액(원)"].astype(int)
+        # 승인금액 정수형으로 변환
+        df["승인금액(원)"] = df["승인금액(원)"].astype(str).str.replace(",", "").astype(int)
 
-        # ✅ 중복된 +, - 금액쌍 제거 (날짜+시각+금액 기준)
-        df["정규금액"] = df["승인금액(원)"]
-        df["매칭키"] = df["승인일자"].astype(str) + "_" + df["승인시각"].astype(str) + "_" + df["정규금액"].abs().astype(str)
-
-        dupes = df["매칭키"].duplicated(keep=False)
-        pos = df["정규금액"] > 0
-        neg = df["정규금액"] < 0
-
-        conflict_keys = df.loc[dupes & pos, "매칭키"].isin(
-            df.loc[dupes & neg, "매칭키"]
+        # 매칭 키 생성 (승인일자 + 승인시각 + 금액 절댓값)
+        df["매칭키"] = (
+            df["승인일자"].astype(str) + "_" +
+            df["승인시각"].astype(str) + "_" +
+            df["승인금액(원)"].abs().astype(str)
         )
 
-        df = df[~df["매칭키"].isin(df.loc[conflict_keys, "매칭키"])]
+        # 중복된 +, - 쌍 제거
+        dupes = df[df.duplicated("매칭키", keep=False)]
+        to_remove = dupes.groupby("매칭키").filter(
+            lambda g: (g["승인금액(원)"] > 0).any() and (g["승인금액(원)"] < 0).any()
+        )
+        df = df[~df.index.isin(to_remove.index)]
 
-        # ✅ 표준 열 구성
-        df["날짜"] = pd.to_datetime(df["승인일자"], errors="coerce").dt.strftime("%Y.%m.%d")
+        # 표준 포맷 구성
+        df["날짜"] = pd.to_datetime(df["승인일자"]).dt.strftime("%Y.%m.%d")
         df["카드"] = "삼성카드"
         df["사용처"] = df["가맹점명"]
-        df["금액"] = df["정규금액"]
+        df["금액"] = df["승인금액(원)"]
         df["카테고리"] = ""
 
         return df[["날짜", "카드", "카테고리", "사용처", "금액"]]
