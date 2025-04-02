@@ -1,3 +1,5 @@
+cards v3
+
 # cards.py (제니앱 - 카드값 계산기)
 
 import streamlit as st
@@ -38,14 +40,10 @@ if uploaded_files:
         else:
             st.warning(f"⚠️ {card_issuer} 내역 파싱 실패")
 
-if all_records:
-    final_df = pd.concat(all_records, ignore_index=True)
-
-    # ✅ 금액 쉼표 표시
-    final_df["금액"] = final_df["금액"].apply(lambda x: f"{int(x):,}")
-
-    st.subheader("📋 통합 카드 사용 내역")
-    st.dataframe(final_df, use_container_width=True)
+    if all_records:
+        final_df = pd.concat(all_records, ignore_index=True)
+        st.subheader("📋 통합 카드 사용 내역")
+        st.dataframe(final_df, use_container_width=True)
 
         # 엑셀 다운로드
         @st.cache_data
