@@ -1,4 +1,4 @@
-# cards.py (제니앱 - 카드값 계산기 v17)
+# cards.py (제니앱 - 카드값 계산기 v18)
 
 import streamlit as st
 import pandas as pd
@@ -73,6 +73,7 @@ if uploaded_files:
             from openpyxl.worksheet.page import PageMargins
             from openpyxl.worksheet.properties import WorksheetProperties, PageSetupProperties
             from openpyxl.chart import PieChart, Reference
+            from openpyxl.chart.series import DataPoint
 
             output = BytesIO()
             wb = Workbook()
@@ -94,7 +95,7 @@ if uploaded_files:
                 top=Side(style='thin'), bottom=Side(style='thin')
             )
 
-            # 표 작성
+            # 표 본문 작성
             ws.append(df.columns.tolist())
             for cell in ws[1]:
                 cell.fill = PatternFill(start_color="000000", end_color="000000", fill_type="solid")
@@ -107,7 +108,8 @@ if uploaded_files:
 
             for i, width in enumerate([11, 11, 20, 40, 15]):
                 ws.column_dimensions[chr(65 + i)].width = width
-            ws.column_dimensions['F'].width = 3  # ✅ F열 열너비 설정
+            ws.column_dimensions['F'].width = 3  # F열 너비
+            ws.column_dimensions['I'].width = 3  # I열 너비 (차트 간격용)
 
             ws.sheet_view.showGridLines = False
 
@@ -129,16 +131,12 @@ if uploaded_files:
                 if category_color:
                     row[2].fill = PatternFill(start_color=category_color, end_color=category_color, fill_type="solid")
 
-            # ✅ 카테고리별 통계 (G1~H8)
+            # 카테고리별 통계
             ws["G1"] = "카테고리"
             ws["H1"] = "금액"
-            ws["G1"].fill = PatternFill(start_color="000000", end_color="000000", fill_type="solid")
-            ws["G1"].font = Font(color="FFFFFF", bold=True)
-            ws["H1"].fill = PatternFill(start_color="000000", end_color="000000", fill_type="solid")
-            ws["H1"].font = Font(color="FFFFFF", bold=True)
-            ws["G1"].alignment = Alignment(horizontal="center", vertical="center")
-            ws["H1"].alignment = Alignment(horizontal="center", vertical="center")
-
+            ws["G1"].fill = ws["H1"].fill = PatternFill(start_color="000000", end_color="000000", fill_type="solid")
+            ws["G1"].font = ws["H1"].font = Font(color="FFFFFF", bold=True)
+            ws["G1"].alignment = ws["H1"].alignment = Alignment(horizontal="center", vertical="center")
             ws.column_dimensions['G'].width = 15
             ws.column_dimensions['H'].width = 15
 
@@ -153,29 +151,21 @@ if uploaded_files:
                 color = color_map_category.get(cat)
                 if color:
                     ws[f"G{row_idx}"].fill = PatternFill(start_color=color, end_color=color, fill_type="solid")
-                ws[f"G{row_idx}"].border = thin_border
-                ws[f"H{row_idx}"].border = thin_border
+                ws[f"G{row_idx}"].border = ws[f"H{row_idx}"].border = thin_border
                 row_idx += 1
 
             ws[f"G{row_idx}"] = "합계"
             ws[f"H{row_idx}"] = int(total_sum)
-            ws[f"H{row_idx}"].number_format = '#,##0'
-            ws[f"G{row_idx}"].fill = PatternFill(start_color="000000", end_color="000000", fill_type="solid")
-            ws[f"H{row_idx}"].fill = PatternFill(start_color="000000", end_color="000000", fill_type="solid")
-            ws[f"G{row_idx}"].font = Font(color="FFFFFF", bold=True)
-            ws[f"H{row_idx}"].font = Font(color="FFFFFF", bold=True)
-            ws[f"G{row_idx}"].border = thin_border
-            ws[f"H{row_idx}"].border = thin_border
+            ws[f"G{row_idx}"].fill = ws[f"H{row_idx}"].fill = PatternFill(start_color="000000", end_color="000000", fill_type="solid")
+            ws[f"G{row_idx}"].font = ws[f"H{row_idx}"].font = Font(color="FFFFFF", bold=True)
+            ws[f"G{row_idx}"].border = ws[f"H{row_idx}"].border = thin_border
 
-            # ✅ 카드사별 통계 (G10~H17)
+            # 카드사별 통계
             ws["G10"] = "카드사"
             ws["H10"] = "금액"
-            ws["G10"].fill = PatternFill(start_color="000000", end_color="000000", fill_type="solid")
-            ws["G10"].font = Font(color="FFFFFF", bold=True)
-            ws["H10"].fill = PatternFill(start_color="000000", end_color="000000", fill_type="solid")
-            ws["H10"].font = Font(color="FFFFFF", bold=True)
-            ws["G10"].alignment = Alignment(horizontal="center", vertical="center")
-            ws["H10"].alignment = Alignment(horizontal="center", vertical="center")
+            ws["G10"].fill = ws["H10"].fill = PatternFill(start_color="000000", end_color="000000", fill_type="solid")
+            ws["G10"].font = ws["H10"].font = Font(color="FFFFFF", bold=True)
+            ws["G10"].alignment = ws["H10"].alignment = Alignment(horizontal="center", vertical="center")
 
             card_stats = df.groupby("카드")["금액"].sum().reindex(color_map_card.keys()).dropna()
             card_total = df["금액"].sum()
@@ -185,24 +175,19 @@ if uploaded_files:
                 ws[f"G{row_idx}"] = card_name
                 ws[f"H{row_idx}"] = int(amount)
                 ws[f"H{row_idx}"].number_format = '#,##0'
-                card_color = color_map_card.get(card_name)
-                if card_color:
-                    ws[f"G{row_idx}"].fill = PatternFill(start_color=card_color, end_color=card_color, fill_type="solid")
-                ws[f"G{row_idx}"].border = thin_border
-                ws[f"H{row_idx}"].border = thin_border
+                color = color_map_card.get(card_name)
+                if color:
+                    ws[f"G{row_idx}"].fill = PatternFill(start_color=color, end_color=color, fill_type="solid")
+                ws[f"G{row_idx}"].border = ws[f"H{row_idx}"].border = thin_border
                 row_idx += 1
 
             ws[f"G{row_idx}"] = "합계"
             ws[f"H{row_idx}"] = int(card_total)
-            ws[f"H{row_idx}"].number_format = '#,##0'
-            ws[f"G{row_idx}"].fill = PatternFill(start_color="000000", end_color="000000", fill_type="solid")
-            ws[f"H{row_idx}"].fill = PatternFill(start_color="000000", end_color="000000", fill_type="solid")
-            ws[f"G{row_idx}"].font = Font(color="FFFFFF", bold=True)
-            ws[f"H{row_idx}"].font = Font(color="FFFFFF", bold=True)
-            ws[f"G{row_idx}"].border = thin_border
-            ws[f"H{row_idx}"].border = thin_border
+            ws[f"G{row_idx}"].fill = ws[f"H{row_idx}"].fill = PatternFill(start_color="000000", end_color="000000", fill_type="solid")
+            ws[f"G{row_idx}"].font = ws[f"H{row_idx}"].font = Font(color="FFFFFF", bold=True)
+            ws[f"G{row_idx}"].border = ws[f"H{row_idx}"].border = thin_border
 
-            # ✅ 카테고리별 원형 차트
+            # ✅ 카테고리별 원형 차트 (J1)
             pie1 = PieChart()
             pie1.title = "카테고리별 사용 비중"
             labels1 = Reference(ws, min_col=7, min_row=2, max_row=7)
@@ -211,9 +196,13 @@ if uploaded_files:
             pie1.set_categories(labels1)
             pie1.height = 7
             pie1.width = 7
-            ws.add_chart(pie1, "I1")
+            for idx, cat in enumerate(color_map_category.keys()):
+                dp = DataPoint(idx=idx)
+                dp.graphicalProperties.solidFill = color_map_category[cat]
+                pie1.series[0].data_points.append(dp)
+            ws.add_chart(pie1, "J1")
 
-            # ✅ 카드사별 원형 차트
+            # ✅ 카드사별 원형 차트 (J14)
             pie2 = PieChart()
             pie2.title = "카드사별 사용 비중"
             labels2 = Reference(ws, min_col=7, min_row=11, max_row=16)
@@ -222,7 +211,11 @@ if uploaded_files:
             pie2.set_categories(labels2)
             pie2.height = 7
             pie2.width = 7
-            ws.add_chart(pie2, "I10")
+            for idx, card in enumerate(color_map_card.keys()):
+                dp = DataPoint(idx=idx)
+                dp.graphicalProperties.solidFill = color_map_card[card]
+                pie2.series[0].data_points.append(dp)
+            ws.add_chart(pie2, "J14")
 
             ws.page_margins = PageMargins(left=0.5, right=0.5, top=0.75, bottom=0.75)
             ws.sheet_properties = WorksheetProperties(pageSetUpPr=PageSetupProperties(fitToPage=True))
