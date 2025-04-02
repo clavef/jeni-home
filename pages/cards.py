@@ -1,4 +1,4 @@
-# cards.py (제니앱 - 카드값 계산기)
+# cards.py (제니앱 - 카드값 계산기 v15)
 
 import streamlit as st
 import pandas as pd
@@ -105,6 +105,7 @@ if uploaded_files:
 
             for i, width in enumerate([11, 11, 20, 40, 15]):
                 ws.column_dimensions[chr(65 + i)].width = width
+            ws.column_dimensions['F'].width = 3  # ✅ F열 열너비 설정
 
             ws.sheet_view.showGridLines = False
 
@@ -126,9 +127,16 @@ if uploaded_files:
                 if category_color:
                     row[2].fill = PatternFill(start_color=category_color, end_color=category_color, fill_type="solid")
 
-            # ✅ 카테고리별 통계 추가 (G1~H8)
+            # ✅ 카테고리별 통계 추가 (G1~Hn)
             ws["G1"] = "카테고리"
             ws["H1"] = "금액"
+            ws["G1"].fill = PatternFill(start_color="000000", end_color="000000", fill_type="solid")
+            ws["G1"].font = Font(color="FFFFFF", bold=True)
+            ws["H1"].fill = PatternFill(start_color="000000", end_color="000000", fill_type="solid")
+            ws["H1"].font = Font(color="FFFFFF", bold=True)
+            ws["G1"].alignment = Alignment(horizontal="center", vertical="center")
+            ws["H1"].alignment = Alignment(horizontal="center", vertical="center")
+
             ws.column_dimensions['G'].width = 15
             ws.column_dimensions['H'].width = 15
 
@@ -147,7 +155,6 @@ if uploaded_files:
                 ws[f"H{row_idx}"].border = thin_border
                 row_idx += 1
 
-            # 합계 행
             ws[f"G{row_idx}"] = "합계"
             ws[f"H{row_idx}"] = int(total_sum)
             ws[f"H{row_idx}"].number_format = '#,##0'
