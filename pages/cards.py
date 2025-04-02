@@ -1,8 +1,10 @@
-# cards.py (제니앱 - 카드값 계산기)
-
 import streamlit as st
 import pandas as pd
-from prism import detect_card_issuer, parse_card_file  # prism으로 수정
+from prism import detect_card_issuer, parse_card_file
+from shared import show_menu  # 왼쪽 메뉴 추가
+
+# 메뉴 표시
+show_menu("카드값 계산기")
 
 st.title("💳 카드값 계산기")
 
