@@ -103,8 +103,9 @@ def parse_kb(file):
         sheet = xls.sheet_names[0]
         df = xls.parse(sheet, skiprows=6)
 
-        # ✅ 취소 내역 제거
-        df = df[~df["이용하신곳"].astype(str).str.contains("승인취소|취소전표매입", na=False)]
+        # ✅ '상태' 컬럼에 '승인취소' 또는 '취소전표매입'이 포함된 행 제거
+        if "상태" in df.columns:
+            df = df[~df["상태"].astype(str).str.contains("승인취소|취소전표매입", na=False)]
 
         df = df[["이용일", "이용하신곳", "이용카드명", "국내이용금액\n(원)"]]
         df.columns = ["날짜", "사용처", "카드", "금액"]
