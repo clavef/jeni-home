@@ -32,6 +32,10 @@ def detect_card_issuer(file) -> Optional[str]:
         cols = df_preview.columns.astype(str).str.strip().tolist()
         colset = set(cols)
 
+        print(f"[DEBUG] {file.name} 열 목록:")
+        for c in cols:
+            print(f"- {c}")
+
         # 열 조합 기반 인식
         if {"이용일자", "이용가맹점", "업종", "이용금액"}.issubset(colset):
             return "롯데카드"
@@ -47,11 +51,9 @@ def detect_card_issuer(file) -> Optional[str]:
             return "하나카드"
 
         return None
-    except Exception:
+    except Exception as e:
+        print("[ERROR] detect_card_issuer 예외 발생:", e)
         return None
-
-# --- 카드사별 파서 연결 ---
-def parse_card_file(file, issuer: str) -> Optional[pd.DataFrame]:
     if issuer == "롯데카드":
         return parse_lotte(file)
     if issuer == "KB국민카드":
