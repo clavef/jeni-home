@@ -1,51 +1,65 @@
-# cards.py (제니앱 - 카드값 계산기)
+# parsers.py - 카드사 자동 인식 및 파싱 모듈
 
-import streamlit as st
 import pandas as pd
-from pages.parsers import detect_card_issuer, parse_card_file
-from shared import show_menu
+from typing import Optional
 
-st.set_page_config(page_title="카드값 계산기 - 제니앱", page_icon="💳", layout="wide")
-show_menu("카드값 계산기")
+# --- 카드사 자동 인식 ---
+def detect_card_issuer(file) -> Optional[str]:
+    try:
+        xls = pd.ExcelFile(file)
+        sheet_names = [name.strip() for name in xls.sheet_names]
 
-st.title("💳 카드값 계산기")
+        file_name = file.name.lower()
+        if "lotte" in file_name or "veex" in file_name:
+            return "롯데카드"
+        if "shinhan" in file_name or "신한" in file_name:
+            return "신한카드"
+        if "hyundai" in file_name or "현대" in file_name:
+            return "현대카드"
+        if "hana" in file_name or "이용상세내역" in file_name:
+            return "하나카드"
+        if "kb" in file_name or "국민" in file_name:
+            return "KB국민카드"
+        if "삼성" in file_name or "할부" in file_name:
+            return "삼성카드"
 
-uploaded_files = st.file_uploader("카드사별 이용 내역 파일 업로드 (여러 개 가능)",
-                                   type=["xlsx"],
-                                   accept_multiple_files=True)
+        if "■ 국내이용내역" in sheet_names:
+            return "삼성카드"
 
-if uploaded_files:
-    all_records = []
-    for file in uploaded_files:
-        card_issuer = detect_card_issuer(file)
-        if not card_issuer:
-            st.warning(f"❌ 카드사 인식 실패: {file.name}")
-            continue
+        df_preview = xls.parse(sheet_names[0], nrows=5)
+        cols = df_preview.columns.astype(str).str.lower().tolist()
 
-        df = parse_card_file(file, card_issuer)
-        if df is not None:
-            all_records.append(df)
-            st.success(f"✅ {card_issuer} 내역 처리 완료: {len(df)}건")
-        else:
-            st.warning(f"⚠️ {card_issuer} 내역 파싱 실패")
+        if any("가맹점명" in c and "승인" in c for c in cols):
+            return "삼성카드"
+        if any("이용가맹점" in c for c in cols) and any("veex" in str(xls.parse(sheet_names[0]).to_string()).lower()):
+            return "롯데카드"
+        if any("이용카드명" in c for c in cols) and any("kb국민" in str(xls.parse(sheet_names[0]).to_string()).lower()):
+            return "KB국민카드"
+        if any("네이버페이" in str(xls.parse(sheet_names[0]).to_string()).lower()):
+            return "현대카드"
+        if any("준디지털" in str(xls.parse(sheet_names[0]).to_string()).lower()):
+            return "신한카드"
+        if any("이용상세내역" in sheet.lower() for sheet in sheet_names):
+            return "하나카드"
 
-    if all_records:
-        final_df = pd.concat(all_records, ignore_index=True)
-        st.subheader("📋 통합 카드 사용 내역")
-        st.dataframe(final_df, use_container_width=True)
+        return None
+    except Exception:
+        return None
 
-        # 엑셀 다운로드
-        @st.cache_data
-        def to_excel(df):
-            from io import BytesIO
-            output = BytesIO()
-            with pd.ExcelWriter(output, engine='xlsxwriter') as writer:
-                df.to_excel(writer, index=False, sheet_name='카드내역')
-            return output.getvalue()
+# --- 카드사별 파서 연결 ---
+def parse_card_file(file, issuer: str) -> Optional[pd.DataFrame]:
+    if issuer == "롯데카드":
+        return parse_lotte(file)
+    if issuer == "KB국민카드":
+        return parse_kb(file)
+    if issuer == "신한카드":
+        return parse_shinhan(file)
+    if issuer == "현대카드":
+        return parse_hyundai(file)
+    if issuer == "하나카드":
+        return parse_hana(file)
+    if issuer == "삼성카드":
+        return parse_samsung(file)
+    return None
 
-        st.download_button(
-            label="📥 엑셀로 다운로드",
-            data=to_excel(final_df),
-            file_name="카드값_통합내역.xlsx",
-            mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-        )
+# 이하 파싱 함수 동일 (생략)...
