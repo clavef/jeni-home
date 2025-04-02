@@ -12,20 +12,15 @@ def show_menu(active_page: str):
                 width: 140px;
                 margin-bottom: 0.5rem;
             }
-            .sidebar-title {
-                font-size: 1.15rem;
-                font-weight: 700;
-                color: #000000;
-                margin-bottom: 1rem;
-            }
         </style>
     """, unsafe_allow_html=True)
 
     st.sidebar.markdown(
         """
         <div class="sidebar-header">
-            <img src="https://raw.githubusercontent.com/clavef/jeniapp/main/logo.png">
-            <div class="sidebar-title">🌟 제니앱 (<a href='https://jeni.kr' target='_blank' style='color: #1f77b4; text-decoration: none;'>Jeni.kr</a>)</div>
+            <a href="/" target="_self">
+                <img src="https://raw.githubusercontent.com/clavef/jeniapp/main/logo.png" alt="Jeniapp Logo">
+            </a>
         </div>
         """,
         unsafe_allow_html=True
