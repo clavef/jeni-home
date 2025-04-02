@@ -54,10 +54,22 @@ def parse_card_file(file, issuer: str) -> Optional[pd.DataFrame]:
 def parse_lotte(file):
     try:
         xls = pd.ExcelFile(file)
-        df = xls.parse("■ 국내이용내역", skiprows=6)
-        df = df[["이용일자", "이용가맹점", "업종", "이용금액"]]
+        # 시트 이름 유사도 기반 선택
+        sheet = next((s for s in xls.sheet_names if "상세" in s), xls.sheet_names[0])
+        df = xls.parse(sheet)
+
+        # 필수 컬럼 존재 여부 확인
+        required_cols = ["이용일자", "이용가맹점", "업종", "이용금액", "취소여부", "취소금액"]
+        if not set(required_cols).issubset(df.columns):
+            raise ValueError("필수 열 누락")
+
+        # 취소되지 않은 건만 필터
+        df = df[df["취소여부"].str.upper() != "Y"]
+
+        df = df[["이용일자", "이용가맹점", "업종", "이용금액"]].copy()
         df.columns = ["날짜", "사용처", "카테고리", "금액"]
         df["카드"] = "롯데카드"
+
         return df[["날짜", "카드", "카테고리", "사용처", "금액"]]
     except Exception as e:
         print("롯데카드 파싱 오류:", e)
