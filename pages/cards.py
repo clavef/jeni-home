@@ -1,24 +1,38 @@
+# cards.py (제니앱 - 카드값 계산기 with 인식 로그 출력)
+
 import streamlit as st
 import pandas as pd
-from .prism import detect_card_issuer, parse_card_file
-from shared import show_menu  # 왼쪽 메뉴 추가
+import sys
+import os
+sys.path.append(os.path.abspath(os.path.dirname(__file__)))
 
-# 메뉴 표시
+from prism import detect_card_issuer, parse_card_file
+from shared import show_menu
+
+st.set_page_config(page_title="카드값 계산기 - 제니앱", page_icon="💳", layout="wide")
 show_menu("카드값 계산기")
 
 st.title("💳 카드값 계산기")
 
-uploaded_files = st.file_uploader("카드사별 이용 내역 파일 업로드 (여러 개 가능)",
-                                   type=["xlsx"],
-                                   accept_multiple_files=True)
+uploaded_files = st.file_uploader(
+    "카드사별 이용 내역 파일 업로드 (여러 개 가능)",
+    type=["xlsx"],
+    accept_multiple_files=True
+)
 
 if uploaded_files:
     all_records = []
     for file in uploaded_files:
-        card_issuer = detect_card_issuer(file)
+        st.markdown(f"---\n### 📂 {file.name}")
+
+        logs, card_issuer = detect_card_issuer(file)
+        with st.expander("🔍 카드사 자동 인식 과정 로그 보기"):
+            for log in logs:
+                st.write(log)
+
         if not card_issuer:
             st.warning(f"❌ 카드사 인식 실패: {file.name}")
-            continue  # 카드사 인식 실패 메시지 출력
+            continue
 
         df = parse_card_file(file, card_issuer)
         if df is not None:
@@ -32,11 +46,12 @@ if uploaded_files:
         st.subheader("📋 통합 카드 사용 내역")
         st.dataframe(final_df, use_container_width=True)
 
-        # 엑셀 다운로드 (캐시 없이 실행)
+        # 엑셀 다운로드
+        @st.cache_data
         def to_excel(df):
             from io import BytesIO
             output = BytesIO()
-            with pd.ExcelWriter(output, engine='xlsxwriter') as writer:
+            with pd.ExcelWriter(output, engine='openpyxl') as writer:
                 df.to_excel(writer, index=False, sheet_name='카드내역')
             return output.getvalue()
 
