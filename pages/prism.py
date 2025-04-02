@@ -127,24 +127,35 @@ def parse_shinhan(file):
 
 # --- 현대카드 ---
 def parse_hyundai(file):
-    try:
-        import numpy as np
+    import pandas as pd
+    import numpy as np
+    import re
 
+    try:
         xls = pd.ExcelFile(file)
-        sheet = xls.sheet_names[0]
-        df = xls.parse(sheet, skiprows=2)
+        sheet_name = xls.sheet_names[0]
+        df = xls.parse(sheet_name, skiprows=2)
 
         df = df[["이용일", "이용가맹점", "이용금액"]].copy()
         df.columns = ["날짜", "사용처", "금액"]
 
-        # ✅ 날짜가 숫자인 경우 (엑셀 시리얼 넘버) 변환
+        # 🔍 소계/합계/기타 불필요한 행 제거
+        def is_valid_row(row):
+            text = str(row["사용처"])
+            return not any(keyword in text for keyword in ["소계", "합계", "총 합계", "일부결제", "End of"])
+
+        df = df[df.apply(is_valid_row, axis=1)].copy()
+
+        # 📅 날짜 처리: 숫자형 → 엑셀 시리얼로 인식하여 변환
         if np.issubdtype(df["날짜"].dtype, np.number):
             df["날짜"] = pd.to_datetime(df["날짜"], unit="d", origin="1899-12-30", errors="coerce")
         else:
             df["날짜"] = pd.to_datetime(df["날짜"], errors="coerce")
 
-        df["날짜"] = df["날짜"].dt.strftime("%Y-%m-%d")  # 보기 좋게 YYYY-MM-DD로 포맷
+        # 🧹 날짜 포맷 정리
+        df["날짜"] = df["날짜"].dt.strftime("%Y-%m-%d")
 
+        # 📌 기타 컬럼 추가
         df["카드"] = "현대카드"
         df["카테고리"] = ""
 
