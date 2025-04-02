@@ -26,6 +26,10 @@ def show_menu(active_page: str):
         unsafe_allow_html=True
     )
 
+    # 표시되는 페이지들
     st.sidebar.page_link("pages/check.py", label="인스타 언팔체크", icon="📱")
     st.sidebar.page_link("pages/cards.py", label="카드값 계산기", icon="💳")
-    st.sidebar.page_link("pages/_audit.py", label="정산 도우미", icon="📊")
+
+    # 숨긴 페이지 → 버튼으로 이동 처리
+    if st.sidebar.button("📊 정산 도우미"):
+        st.switch_page("pages/_audit.py")
