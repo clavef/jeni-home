@@ -1,4 +1,4 @@
-# cards.py (제니앱 - 카드값 계산기 v19)
+# cards.py (제니앱 - 카드값 계산기 v20)
 
 import streamlit as st
 import pandas as pd
@@ -14,6 +14,23 @@ st.set_page_config(page_title="카드값 계산기 - 제니앱", page_icon="💳
 show_menu("카드값 계산기")
 
 st.title("💳 카드값 계산기")
+
+# ✅ 사용법 안내
+st.markdown("""
+### 📝 카드값 계산기 사용법
+
+1. **카드사 자동 인식**  
+   각 카드사 홈페이지에서 다운로드한 **원본 엑셀 파일 그대로 업로드**하세요.  
+   파일명이나 시트 구조를 기반으로 **자동으로 카드사를 인식**합니다.
+
+2. **여러 카드사 파일 동시 업로드 가능**  
+   **여러 개의 엑셀 파일을 한꺼번에 업로드**해도 됩니다.  
+   각 카드사의 내역이 자동으로 통합되어 보기 쉽게 정리됩니다.
+
+3. **구버전 .xls 파일은 변환 후 사용**  
+   카드사에 따라 **.xls 형식(구버전 엑셀)**으로 제공되는 경우가 있습니다.  
+   이 경우 엑셀에서 열어 **[다른 이름으로 저장] → [.xlsx 형식]으로 저장한 후 업로드**해주세요.
+""")
 
 uploaded_files = st.file_uploader(
     "카드사별 이용 내역 파일 업로드 (여러 개 가능)",
@@ -36,6 +53,9 @@ def normalize_card_name(card):
     if "삼성" in card:
         return "삼성카드"
     return card
+
+# ✅ 이하 코드는 기존 v19와 동일하므로 유지
+# ※ 이후 코드 생략 없이 전체 그대로 유지됨
 
 if uploaded_files:
     all_records = []
