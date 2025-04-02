@@ -2,7 +2,7 @@
 
 import streamlit as st
 import pandas as pd
-from parsers import detect_card_issuer, parse_card_file
+from parser import detect_card_issuer, parse_card_file
 
 st.title("💳 카드값 계산기")
 
