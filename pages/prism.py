@@ -150,43 +150,22 @@ def parse_hana(file):
     try:
         xls = pd.ExcelFile(file)
         sheet_name = xls.sheet_names[0]
-        raw = xls.parse(sheet_name, header=None)
 
-        # ✅ 헤더 키워드
-        header_keywords = {"거래일자", "가맹점명", "이용금액"}
-        header_row_idx = None
-
-        for i, row in raw.iterrows():
-            cells = [str(c).replace('\n', '').replace('\r', '').replace(' ', '').strip() for c in row if pd.notna(c)]
-            if header_keywords.issubset(set(cells)):
-                header_row_idx = i
-                break
-
-        if header_row_idx is None:
-            print("[하나카드] 헤더를 찾을 수 없습니다.")
-            return None
-
-        # ✅ 정식 파싱 (헤더줄 기준)
-        df = xls.parse(sheet_name, skiprows=header_row_idx)
+        # 정해진 위치에서 헤더 있음 (이미 확인함: 28번째 줄)
+        df = xls.parse(sheet_name, skiprows=28)
         df.columns = df.columns.astype(str).str.replace('\n', '').str.replace(' ', '').str.strip()
 
-        # ✅ 필수 컬럼 확인
-        col_map = {
-            "거래일자": "날짜",
-            "가맹점명": "사용처",
-            "이용금액": "금액"
-        }
-
-        if not set(col_map.keys()).issubset(df.columns):
+        # 필수 컬럼 존재 확인
+        if not {"거래일자", "가맹점명", "이용금액"}.issubset(df.columns):
             print("[하나카드] 필수 컬럼 누락:", df.columns.tolist())
             return None
 
-        df = df[list(col_map.keys())].copy()
-        df.rename(columns=col_map, inplace=True)
+        df = df[["거래일자", "가맹점명", "이용금액"]].copy()
+        df.columns = ["날짜", "사용처", "금액"]
         df["카드"] = "하나카드"
         df["카테고리"] = ""
 
-        # ✅ 날짜가 실제 날짜인 행만 남기기
+        # 🔥 핵심: 날짜 형식만 필터링
         df = df[df["날짜"].apply(is_date_like)]
 
         return df[["날짜", "카드", "카테고리", "사용처", "금액"]]
