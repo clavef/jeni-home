@@ -1,4 +1,4 @@
-# pages/audit.py (정산 도우미 v2)
+# pages/_audit.py (정산 도우미 v2)
 
 import streamlit as st
 st.set_page_config(page_title="정산 도우미", page_icon="📊", layout="wide")
