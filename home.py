@@ -1,25 +1,51 @@
-# home.py
-import streamlit as st
-st.set_page_config(page_title="제니앱", page_icon="🌟", layout="wide")
+# cards.py (제니앱 - 카드값 계산기)
 
+import streamlit as st
+import pandas as pd
+from pages.parsers import detect_card_issuer, parse_card_file
 from shared import show_menu
 
-show_menu("홈")
+st.set_page_config(page_title="카드값 계산기 - 제니앱", page_icon="💳", layout="wide")
+show_menu("카드값 계산기")
 
-st.title("🌟 제니앱 (Jeni.kr)")
-st.markdown("**생활과 업무를 편리하게 만들어주는 다양한 도구들을 제니앱에서 만나보세요.**")
-st.markdown("---")
+st.title("💳 카드값 계산기")
 
-st.markdown("### 📊 정산 도우미")
-st.write("엑셀 파일을 업로드해 BL별 금액 누락 및 불일치를 자동으로 비교합니다.")
-st.markdown("왼쪽 메뉴에서 **정산 도우미**를 선택하세요.")
+uploaded_files = st.file_uploader("카드사별 이용 내역 파일 업로드 (여러 개 가능)",
+                                   type=["xlsx"],
+                                   accept_multiple_files=True)
 
-st.markdown("\n---")
+if uploaded_files:
+    all_records = []
+    for file in uploaded_files:
+        card_issuer = detect_card_issuer(file)
+        if not card_issuer:
+            st.warning(f"❌ 카드사 인식 실패: {file.name}")
+            continue
 
-st.markdown("### 📱 인스타 언팔체크")
-st.write("Instagram에서 다운로드한 JSON 데이터를 분석해, 내가 팔로우하지만 나를 팔로우하지 않는 계정을 찾아줍니다.")
-st.markdown("왼쪽 메뉴에서 **인스타 언팔체크**를 선택하세요.")
+        df = parse_card_file(file, card_issuer)
+        if df is not None:
+            all_records.append(df)
+            st.success(f"✅ {card_issuer} 내역 처리 완료: {len(df)}건")
+        else:
+            st.warning(f"⚠️ {card_issuer} 내역 파싱 실패")
 
-st.markdown("\n---")
-st.markdown("ℹ️ 향후 다양한 도구들이 이곳에 추가될 예정입니다.")
-st.caption("© 2025 제니앱 · 문의: id@matt.kr")
+    if all_records:
+        final_df = pd.concat(all_records, ignore_index=True)
+        st.subheader("📋 통합 카드 사용 내역")
+        st.dataframe(final_df, use_container_width=True)
+
+        # 엑셀 다운로드
+        @st.cache_data
+        def to_excel(df):
+            from io import BytesIO
+            output = BytesIO()
+            with pd.ExcelWriter(output, engine='xlsxwriter') as writer:
+                df.to_excel(writer, index=False, sheet_name='카드내역')
+            return output.getvalue()
+
+        st.download_button(
+            label="📥 엑셀로 다운로드",
+            data=to_excel(final_df),
+            file_name="카드값_통합내역.xlsx",
+            mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+        )
