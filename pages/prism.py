@@ -1,5 +1,13 @@
+# pages/prism.py
+
+import streamlit as st
 import pandas as pd
 from typing import Optional
+
+# ✅ 직접 실행된 경우에만 경고 메시지 출력
+if __name__ == "__main__" or st.runtime.exists():
+    st.set_page_config(page_title="내부 함수 (Prism)", layout="centered")
+    st.warning("⚠️ 이 페이지는 내부 기능을 위한 페이지입니다. 직접 사용할 필요는 없습니다.")
 
 # --- 카드사 자동 인식 ---
 def detect_card_issuer(file) -> Optional[str]:
@@ -20,14 +28,12 @@ def detect_card_issuer(file) -> Optional[str]:
 
         for sheet in xls.sheet_names:
             df = xls.parse(sheet, header=None)
-
             for i in range(min(100, len(df))):
                 row = df.iloc[i]
                 normed = set(normalize(cell) for cell in row if pd.notna(cell))
                 for issuer, keywords in patterns.items():
-                    if keywords.issubset(normed):  # 🔥 핵심 수정
+                    if keywords.issubset(normed):
                         return issuer
-
         return None
     except Exception as e:
         print("[ERROR] detect_card_issuer 예외 발생:", e)
