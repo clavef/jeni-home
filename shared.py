@@ -19,7 +19,7 @@ def show_menu(active_page: str):
     # ✅ 로고 이미지 삽입
     st.sidebar.markdown(
         """
-        <img src="logo.png" width="80" class="sidebar-logo">
+        <img src="https://raw.githubusercontent.com/clavef/jeniapp/main/logo.png" width="80" class="sidebar-logo">
         """,
         unsafe_allow_html=True
     )
