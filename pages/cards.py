@@ -3,6 +3,10 @@
 import streamlit as st
 import pandas as pd
 from pages.parsers import detect_card_issuer, parse_card_file
+from shared import show_menu
+
+st.set_page_config(page_title="카드값 계산기 - 제니앱", page_icon="💳", layout="wide")
+show_menu("카드값 계산기")
 
 st.title("💳 카드값 계산기")
 
