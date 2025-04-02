@@ -143,19 +143,25 @@ def parse_hyundai(file):
 # --- 하나카드 ---
 def parse_hana(file):
     import re
+    import pandas as pd
 
     def is_date_like(val):
-        return isinstance(val, str) and re.match(r"\d{4}\.\d{2}\.\d{2}", val)
+        try:
+            if pd.isna(val):
+                return False
+            val_str = str(val).strip()
+            return bool(re.match(r"\d{4}\.\d{2}\.\d{2}", val_str))
+        except:
+            return False
 
     try:
         xls = pd.ExcelFile(file)
         sheet_name = xls.sheet_names[0]
 
-        # 정해진 위치에서 헤더 있음 (이미 확인함: 28번째 줄)
+        # 하나카드는 헤더가 28번째 줄부터 시작
         df = xls.parse(sheet_name, skiprows=28)
         df.columns = df.columns.astype(str).str.replace('\n', '').str.replace(' ', '').str.strip()
 
-        # 필수 컬럼 존재 확인
         if not {"거래일자", "가맹점명", "이용금액"}.issubset(df.columns):
             print("[하나카드] 필수 컬럼 누락:", df.columns.tolist())
             return None
@@ -165,7 +171,7 @@ def parse_hana(file):
         df["카드"] = "하나카드"
         df["카테고리"] = ""
 
-        # 🔥 핵심: 날짜 형식만 필터링
+        # ✅ 진짜로 날짜처럼 보이는 값만 남기기
         df = df[df["날짜"].apply(is_date_like)]
 
         return df[["날짜", "카드", "카테고리", "사용처", "금액"]]
