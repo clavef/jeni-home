@@ -128,34 +128,29 @@ def parse_shinhan(file):
 # --- 현대카드 ---
 def parse_hyundai(file):
     import pandas as pd
-    import numpy as np
-    import re
 
     try:
         xls = pd.ExcelFile(file)
-        sheet_name = xls.sheet_names[0]
-        df = xls.parse(sheet_name, skiprows=2)
+        sheet = xls.sheet_names[0]
+        df = xls.parse(sheet, skiprows=2)
 
+        # ✅ 소계·합계 등 제거
+        df = df[~df["이용가맹점"].astype(str).str.contains("합계|소계|총|이월", na=False)]
+
+        # ✅ 엑셀 시리얼 날짜 복원: 숫자 or 숫자 문자열도 포함
+        def convert_excel_date(val):
+            try:
+                val = float(val)
+                return pd.to_datetime("1899-12-30") + pd.to_timedelta(val, unit="D")
+            except:
+                return pd.to_datetime(val, errors="coerce")
+
+        df["이용일"] = df["이용일"].apply(convert_excel_date)
+        df["이용일"] = df["이용일"].dt.strftime("%Y.%m.%d")  # 보기 좋게 포맷
+
+        # ✅ 필요한 컬럼만 추출
         df = df[["이용일", "이용가맹점", "이용금액"]].copy()
         df.columns = ["날짜", "사용처", "금액"]
-
-        # 🔍 소계/합계/기타 불필요한 행 제거
-        def is_valid_row(row):
-            text = str(row["사용처"])
-            return not any(keyword in text for keyword in ["소계", "합계", "총 합계", "일부결제", "End of"])
-
-        df = df[df.apply(is_valid_row, axis=1)].copy()
-
-        # 📅 날짜 처리: 숫자형 → 엑셀 시리얼로 인식하여 변환
-        if np.issubdtype(df["날짜"].dtype, np.number):
-            df["날짜"] = pd.to_datetime(df["날짜"], unit="d", origin="1899-12-30", errors="coerce")
-        else:
-            df["날짜"] = pd.to_datetime(df["날짜"], errors="coerce")
-
-        # 🧹 날짜 포맷 정리
-        df["날짜"] = df["날짜"].dt.strftime("%Y-%m-%d")
-
-        # 📌 기타 컬럼 추가
         df["카드"] = "현대카드"
         df["카테고리"] = ""
 
