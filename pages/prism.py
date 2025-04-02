@@ -1,4 +1,4 @@
-# prism.py - 카드사 자동 인식 및 파싱 모듈 (헤더 위치 정밀 탐지)
+# prism.py - 카드사 자동 인식 및 파싱 모듈 (부분 포함 허용)
 
 import pandas as pd
 from typing import Optional
@@ -12,23 +12,26 @@ def detect_card_issuer(file) -> Optional[str]:
         def normalize(text):
             return str(text).replace('\n', '').replace('\r', '').replace(' ', '').strip()
 
-        # 카드사별 시그니처 열 조합
+        def fuzzy_match(columns, keywords):
+            return all(any(k in col for col in columns) for k in keywords)
+
+        # 카드사별 시그니처 열 조합 (핵심 키워드 기준)
         patterns = {
-            "롯데카드": {"이용일자", "이용가맹점", "업종", "이용금액"},
-            "KB국민카드": {"이용일", "이용하신곳", "이용카드명", "국내이용금액(원)"},
-            "신한카드": {"거래일자", "이용가맹점", "거래금액"},
-            "현대카드": {"이용일", "이용가맹점", "이용금액"},
-            "삼성카드": {"승인일자", "가맹점명", "승인금액(원)"},
-            "하나카드": {"항목", "구분", "날짜", "사용처", "금액"},
+            "롯데카드": ["이용일자", "이용가맹점", "업종", "이용금액"],
+            "KB국민카드": ["이용일", "이용하신곳", "이용카드명", "국내이용금액"],
+            "신한카드": ["거래일자", "이용가맹점", "거래금액"],
+            "현대카드": ["이용일", "이용가맹점", "이용금액"],
+            "삼성카드": ["승인일자", "가맹점명", "승인금액"],
+            "하나카드": ["항목", "구분", "날짜", "사용처", "금액"],
         }
 
         for sheet in xls.sheet_names:
             df = xls.parse(sheet, header=None)
             for i in range(len(df)):
                 row = df.iloc[i]
-                normed = set(normalize(cell) for cell in row if pd.notna(cell))
+                normed = [normalize(cell) for cell in row if pd.notna(cell)]
                 for issuer, keywords in patterns.items():
-                    if keywords <= normed:
+                    if fuzzy_match(normed, keywords):
                         return issuer
 
         return None
@@ -51,6 +54,8 @@ def parse_card_file(file, issuer: str) -> Optional[pd.DataFrame]:
     if issuer == "삼성카드":
         return parse_samsung(file)
     return None
+
+# --- 이하 카드사별 파싱 함수 동일 ---
 
 # --- 롯데카드 ---
 def parse_lotte(file):
