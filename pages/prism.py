@@ -103,6 +103,9 @@ def parse_kb(file):
         sheet = xls.sheet_names[0]
         df = xls.parse(sheet, skiprows=6)
 
+        # ✅ 취소 내역 제거
+        df = df[~df["이용하신곳"].astype(str).str.contains("승인취소|취소전표매입", na=False)]
+
         df = df[["이용일", "이용하신곳", "이용카드명", "국내이용금액\n(원)"]]
         df.columns = ["날짜", "사용처", "카드", "금액"]
 
@@ -110,6 +113,7 @@ def parse_kb(file):
         df["날짜"] = pd.to_datetime(df["날짜"], errors="coerce").dt.strftime("%Y.%m.%d")
 
         df["카테고리"] = ""
+
         return df[["날짜", "카드", "카테고리", "사용처", "금액"]]
     except Exception as e:
         print("KB국민카드 파싱 오류:", e)
