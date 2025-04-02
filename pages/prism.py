@@ -128,15 +128,22 @@ def parse_shinhan(file):
 # --- 현대카드 ---
 def parse_hyundai(file):
     try:
+        import pandas as pd
+
         xls = pd.ExcelFile(file)
         sheet = xls.sheet_names[0]
         df = xls.parse(sheet, skiprows=2)
 
-        # ✅ 불필요한 행 제거
+        # ✅ 소계·합계 등 제거
         df = df[~df["이용가맹점"].astype(str).str.contains("합계|소계|총|이월", na=False)]
 
-        # ✅ 날짜 변환 (숫자 ➝ 날짜)
-        df["이용일"] = pd.to_datetime(df["이용일"], errors="coerce").dt.strftime("%Y.%m.%d")
+        # ✅ 날짜 컬럼 → 엑셀 날짜 숫자 복원 (serial → 날짜)
+        if pd.api.types.is_numeric_dtype(df["이용일"]):
+            df["이용일"] = pd.to_datetime("1899-12-30") + pd.to_timedelta(df["이용일"], unit="D")
+        else:
+            df["이용일"] = pd.to_datetime(df["이용일"], errors="coerce")
+
+        df["이용일"] = df["이용일"].dt.strftime("%Y.%m.%d")  # 보기 좋게 포맷
 
         df = df[["이용일", "이용가맹점", "이용금액"]]
         df.columns = ["날짜", "사용처", "금액"]
