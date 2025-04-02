@@ -5,7 +5,6 @@ from typing import Optional
 def detect_card_issuer(file) -> Optional[str]:
     try:
         xls = pd.ExcelFile(file)
-        file_name = file.name.lower()
 
         def normalize(text):
             return str(text).replace('\n', '').replace('\r', '').replace(' ', '').strip()
@@ -16,17 +15,18 @@ def detect_card_issuer(file) -> Optional[str]:
             "신한카드": {"거래일자", "이용가맹점", "거래금액"},
             "현대카드": {"이용일", "이용가맹점", "이용금액"},
             "삼성카드": {"승인일자", "가맹점명", "승인금액(원)"},
-            "하나카드": {"거래일자", "가맹점명", "이용금액"},  # 이게 핵심
+            "하나카드": {"거래일자", "가맹점명", "이용금액"},  # 핵심 시그니처
         }
 
         for sheet in xls.sheet_names:
             df = xls.parse(sheet, header=None)
-            # 🔥 최대 50행까지 검색 범위 확장
-            for i in range(min(50, len(df))):
+
+            # 🔍 최대 100행까지 탐색 + 소문자/공백/한글 조합 다 제거
+            for i in range(min(100, len(df))):
                 row = df.iloc[i]
                 normed = set(normalize(cell) for cell in row if pd.notna(cell))
                 for issuer, keywords in patterns.items():
-                    if keywords <= normed:
+                    if keywords.issubset(normed):
                         return issuer
 
         return None
