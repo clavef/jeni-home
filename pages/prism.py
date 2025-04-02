@@ -119,32 +119,20 @@ def parse_kb(file):
         # ✅ 금액 숫자 처리
         df["금액"] = df["금액"].astype(str).str.replace(",", "").astype(int)
 
-        # ✅ 할부 처리
-        def split_installments(row):
-            method = row["결제방법"]
+        # ✅ 할부인 경우 → 이번달 결제금액만 포함
+        def adjust_installment(row):
+            method = str(row["결제방법"])
             if method != "일시불" and any(char.isdigit() for char in method):
                 months = int(''.join(filter(str.isdigit, method)))
-                amount = round(row["금액"] / months)
-                return pd.DataFrame({
-                    "날짜": [row["날짜"]] * months,
-                    "카드": [row["카드"]] * months,
-                    "카테고리": [""] * months,
-                    "사용처": [row["사용처"]] * months,
-                    "금액": [amount] * months
-                })
+                return round(row["금액"] / months)
             else:
-                return pd.DataFrame({
-                    "날짜": [row["날짜"]],
-                    "카드": [row["카드"]],
-                    "카테고리": [""],
-                    "사용처": [row["사용처"]],
-                    "금액": [row["금액"]]
-                })
+                return row["금액"]
 
-        split_rows = [split_installments(row) for _, row in df.iterrows()]
-        df_result = pd.concat(split_rows, ignore_index=True)
+        df["금액"] = df.apply(adjust_installment, axis=1)
 
-        return df_result[["날짜", "카드", "카테고리", "사용처", "금액"]]
+        df["카테고리"] = ""
+
+        return df[["날짜", "카드", "카테고리", "사용처", "금액"]]
 
     except Exception as e:
         print("KB국민카드 파싱 오류:", e)
