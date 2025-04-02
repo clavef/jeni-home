@@ -3,15 +3,15 @@
 import streamlit as st
 import re
 
-# ✅ 경고 메시지: 방문자가 직접 이 페이지를 열었을 때 안내
-st.set_page_config(page_title="내부 함수 (Rules)", layout="centered")
-st.warning("⚠️ 이 페이지는 내부 기능을 위한 페이지입니다. 직접 사용할 필요는 없습니다.")
+# ✅ 직접 실행된 경우에만 경고 메시지 출력
+if __name__ == "__main__" or st.runtime.exists():
+    st.set_page_config(page_title="내부 함수 (Rules)", layout="centered")
+    st.warning("⚠️ 이 페이지는 내부 기능을 위한 페이지입니다. 직접 사용할 필요는 없습니다.")
 
-# ✅ 간단한 규칙 기반 자동 분류 함수 (v2)
+# ✅ 규칙 기반 자동 분류 함수
 def categorize(merchant: str) -> str:
     merchant = str(merchant)
 
-    # ✅ 우선 적용 규칙 (상위 우선순위)
     high_priority_rules = [
         (r"주차장", "교통/주유/주차"),
         (r"롯데마트|달콤N|매머드|헤이듀", "음식점/카페/편의점"),
@@ -25,7 +25,6 @@ def categorize(merchant: str) -> str:
         (r"한울곰탕", "음식점/카페/편의점"),
     ]
 
-    # ✅ 일반 규칙
     general_rules = [
         (r"주유|충전|자동차|세차|오토오아시스|주차", "교통/주유/주차"),
         (r"병원|치과|의원|내과|약국|정형외과", "병원/약국"),
@@ -34,12 +33,10 @@ def categorize(merchant: str) -> str:
         (r"관리비|통신|SKT|KT|LGU\+|렌탈|보험|납부|세금|등록금|교육비|마이데이터|고정지출", "고정지출"),
     ]
 
-    # ✅ 우선 규칙 먼저 적용
     for pattern, category in high_priority_rules:
         if re.search(pattern, merchant, re.IGNORECASE):
             return category
 
-    # ✅ 일반 규칙 적용
     for pattern, category in general_rules:
         if re.search(pattern, merchant, re.IGNORECASE):
             return category
