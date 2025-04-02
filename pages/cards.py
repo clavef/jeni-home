@@ -46,7 +46,7 @@ if uploaded_files:
             st.markdown(f"---\n### 📂 {file.name}")
 
             card_issuer = detect_card_issuer(file)
-            
+
             if not card_issuer:
                 st.warning(f"❌ 카드사 인식 실패: {file.name}")
                 continue
@@ -56,7 +56,7 @@ if uploaded_files:
                 all_records.append(df)
                 st.success(f"✅ {card_issuer} 내역 처리 완료: {len(df)}건")
             else:
-                st.warning(f"⚠️ {card_issuer} 내역 파싱 실패")
+                st.warning(f"⚠️ {card_issuer} 내역 파시는 실패")
 
     if all_records:
         final_df = pd.concat(all_records, ignore_index=True)
@@ -69,7 +69,7 @@ if uploaded_files:
         st.subheader("📋 통합 카드 사용 내역")
         st.dataframe(final_df, use_container_width=True)
 
-        # ✅ 엑셀 다운로드 함수
+        # ✅ 애플 다운로드 함수
         @st.cache_data
         def to_excel(df):
             from io import BytesIO
@@ -135,7 +135,7 @@ if uploaded_files:
 
                 for idx, cell in enumerate(row):
                     cell.border = thin_border
-                    if idx == 4:  # 금액
+                    if idx == 4:
                         try:
                             cell.number_format = '#,##0'
                             cell.alignment = Alignment(horizontal="right", vertical="center")
@@ -151,6 +151,42 @@ if uploaded_files:
                 if category_color:
                     row[2].fill = PatternFill(start_color=category_color, end_color=category_color, fill_type="solid")
 
+            # ✅ 카테고리 통계 삽입 (G1:H8)
+            from collections import defaultdict
+            summary = defaultdict(int)
+            for _, row in df.iterrows():
+                category = row['카테고리']
+                amount = int(str(row['금액']).replace(',', ''))
+                summary[category] += amount
+            total = sum(summary.values())
+
+            ws["G1"] = "카테고리"
+            ws["H1"] = "금액"
+            ws["G1"].fill = PatternFill(start_color="000000", end_color="000000", fill_type="solid")
+            ws["H1"].fill = PatternFill(start_color="000000", end_color="000000", fill_type="solid")
+            ws["G1"].font = ws["H1"].font = Font(color="FFFFFF", bold=True)
+            ws["G1"].alignment = ws["H1"].alignment = Alignment(horizontal="center")
+
+            row_idx = 2
+            for cat in ["교통/주유/주차", "병원/약국", "취미/쇼핑", "음식점/카페/편의점", "고정지출", "잡비용"]:
+                ws[f"G{row_idx}"] = cat
+                ws[f"H{row_idx}"] = summary.get(cat, 0)
+                ws[f"H{row_idx}"].number_format = '#,##0'
+                fill_color = color_map_category.get(cat)
+                ws[f"G{row_idx}"].fill = ws[f"H{row_idx}"].fill = PatternFill(start_color=fill_color, end_color=fill_color, fill_type="solid")
+                row_idx += 1
+
+            # 합계
+            ws[f"G{row_idx}"] = "합계"
+            ws[f"H{row_idx}"] = total
+            ws[f"H{row_idx}"].number_format = '#,##0'
+            ws[f"G{row_idx}"].fill = ws[f"H{row_idx}"].fill = PatternFill(start_color="000000", end_color="000000", fill_type="solid")
+            ws[f"G{row_idx}"].font = ws[f"H{row_idx}"].font = Font(color="FFFFFF", bold=True)
+            ws[f"G{row_idx}"].alignment = ws[f"H{row_idx}"].alignment = Alignment(horizontal="center")
+
+            ws.column_dimensions['G'].width = 15
+            ws.column_dimensions['H'].width = 15
+
             # 페이지 설정
             ws.page_margins = PageMargins(left=0.5, right=0.5, top=0.75, bottom=0.75)
             ws.sheet_properties = WorksheetProperties(pageSetUpPr=PageSetupProperties(fitToPage=True))
@@ -159,7 +195,7 @@ if uploaded_files:
             return output.getvalue()
 
         st.download_button(
-            label="📥 엑셀로 다운로드",
+            label="📅 애플로 다운로드",
             data=to_excel(final_df),
             file_name="카드값_통합내역.xlsx",
             mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
