@@ -8,6 +8,7 @@ sys.path.append(os.path.abspath(os.path.dirname(__file__)))
 
 from prism import detect_card_issuer, parse_card_file
 from shared import show_menu
+from pages.rules import guess_category  # ✅ rules.py에서 분류 함수 불러오기
 
 st.set_page_config(page_title="카드값 계산기 - 제니앱", page_icon="💳", layout="wide")
 show_menu("카드값 계산기")
@@ -57,6 +58,7 @@ if uploaded_files:
     if all_records:
         final_df = pd.concat(all_records, ignore_index=True)
         final_df["카드"] = final_df["카드"].apply(normalize_card_name)
+        final_df["카테고리"] = final_df["사용처"].apply(guess_category)  # ✅ 자동 카테고리 분류
 
         st.subheader("📋 통합 카드 사용 내역")
         st.dataframe(final_df, use_container_width=True)
