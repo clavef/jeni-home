@@ -36,4 +36,4 @@ if st.button("▶️ 정산 도우미 실행하기"):
 
 st.markdown("\n---")
 st.markdown("ℹ️ 향후 다양한 도구들이 이곳에 추가될 예정입니다.")
-st.caption("© 2025 제니앱 · 문의: id@matt.kr")
+st.caption("© 2025 제니앱 · 문의: 마춤법장인(id@matt.kr"))
