@@ -1,6 +1,6 @@
 import streamlit as st
 import pandas as pd
-from prism import detect_card_issuer, parse_card_file
+from .prism import detect_card_issuer, parse_card_file
 from shared import show_menu  # 왼쪽 메뉴 추가
 
 # 메뉴 표시
