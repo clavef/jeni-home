@@ -165,7 +165,7 @@ if uploaded_files:
             return output.getvalue()
 
         st.download_button(
-            label="📅 에크셀로 다운로드",
+            label="📅 엑셀파일 다운로드",
             data=to_excel(final_df),
             file_name="카드값_통합내역.xlsx",
             mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
