@@ -1,4 +1,7 @@
+# home.py
 import streamlit as st
+st.set_page_config(page_title="제니앱", page_icon="🌟", layout="wide")
+
 from shared import show_menu
 
 show_menu("home")
@@ -27,3 +30,7 @@ st.page_link("pages/cards.py", label="카드값 계산기 실행하기")
 st.subheader("📊 정산 도우미")
 st.markdown("CSV 기반의 엑셀 정산 파일을 업로드하면 항목을 자동 분석하고, 데이터 병합과 분류 작업을 도와줍니다.")
 st.page_link("pages/audit.py", label="정산 도우미 실행하기")
+
+st.markdown("\n---")
+st.markdown("ℹ️ 향후 다양한 도구들이 이곳에 추가될 예정입니다.")
+st.caption("© 2025 제니앱 · 문의: id@matt.kr")
