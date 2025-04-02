@@ -15,15 +15,13 @@ if uploaded_files:
     for file in uploaded_files:
         card_issuer = detect_card_issuer(file)
         if not card_issuer:
-            st.warning(f"❌ 카드사 인식 실패: {file.name}")
-            continue
+            continue  # 카드사 인식 실패 메시지는 더 이상 출력하지 않음
 
         df = parse_card_file(file, card_issuer)
         if df is not None:
             all_records.append(df)
-            st.success(f"✅ {card_issuer} 내역 처리 완료: {len(df)}건")
         else:
-            st.warning(f"⚠️ {card_issuer} 내역 파싱 실패")
+            continue  # 파싱 실패 메시지 역시 출력하지 않음
 
     if all_records:
         final_df = pd.concat(all_records, ignore_index=True)
