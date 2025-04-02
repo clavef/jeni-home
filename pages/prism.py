@@ -128,6 +128,8 @@ def parse_shinhan(file):
 # --- 현대카드 ---
 def parse_hyundai(file):
     try:
+        import numpy as np
+
         xls = pd.ExcelFile(file)
         sheet = xls.sheet_names[0]
         df = xls.parse(sheet, skiprows=2)
@@ -135,14 +137,19 @@ def parse_hyundai(file):
         df = df[["이용일", "이용가맹점", "이용금액"]].copy()
         df.columns = ["날짜", "사용처", "금액"]
 
-        # ✅ 엑셀 시리얼 넘버 날짜 처리
-        df["날짜"] = pd.to_datetime(df["날짜"], unit="d", origin="1899-12-30", errors="coerce")
-        df["날짜"] = df["날짜"].dt.strftime("%Y-%m-%d")  # 형식 예쁘게
+        # ✅ 날짜가 숫자인 경우 (엑셀 시리얼 넘버) 변환
+        if np.issubdtype(df["날짜"].dtype, np.number):
+            df["날짜"] = pd.to_datetime(df["날짜"], unit="d", origin="1899-12-30", errors="coerce")
+        else:
+            df["날짜"] = pd.to_datetime(df["날짜"], errors="coerce")
+
+        df["날짜"] = df["날짜"].dt.strftime("%Y-%m-%d")  # 보기 좋게 YYYY-MM-DD로 포맷
 
         df["카드"] = "현대카드"
         df["카테고리"] = ""
 
         return df[["날짜", "카드", "카테고리", "사용처", "금액"]]
+
     except Exception as e:
         print("현대카드 파싱 오류:", e)
         return None
