@@ -31,9 +31,9 @@ def detect_card_issuer(file) -> Optional[str]:
         def normalize(col):
             return str(col).replace('\n', '').replace('\r', '').replace(' ', '').strip()
 
-        # 시트 전체 순회하며 헤더 후보 탐색 (확장: 50행까지)
+        # 시트 전체 순회하며 헤더 후보 탐색 (확장: 100행까지)
         for sheet in xls.sheet_names:
-            df = xls.parse(sheet, header=None, nrows=50)
+            df = xls.parse(sheet, header=None, nrows=100)
             for i in range(len(df)):
                 row = df.iloc[i].dropna().astype(str).tolist()
                 norm = [normalize(c) for c in row]
