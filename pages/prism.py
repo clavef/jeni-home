@@ -102,8 +102,13 @@ def parse_kb(file):
         xls = pd.ExcelFile(file)
         sheet = xls.sheet_names[0]
         df = xls.parse(sheet, skiprows=6)
+
         df = df[["이용일", "이용하신곳", "이용카드명", "국내이용금액\n(원)"]]
         df.columns = ["날짜", "사용처", "카드", "금액"]
+
+        # ✅ 날짜 포맷 통일
+        df["날짜"] = pd.to_datetime(df["날짜"], errors="coerce").dt.strftime("%Y.%m.%d")
+
         df["카테고리"] = ""
         return df[["날짜", "카드", "카테고리", "사용처", "금액"]]
     except Exception as e:
