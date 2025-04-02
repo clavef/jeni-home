@@ -144,6 +144,7 @@ def parse_hyundai(file):
 def parse_hana(file):
     import re
     import pandas as pd
+    import streamlit as st  # ✅ Streamlit UI 로그 출력용
 
     def is_date_like(val):
         try:
@@ -158,12 +159,11 @@ def parse_hana(file):
         xls = pd.ExcelFile(file)
         sheet_name = xls.sheet_names[0]
 
-        # 하나카드는 헤더가 28번째 줄부터 시작
         df = xls.parse(sheet_name, skiprows=28)
         df.columns = df.columns.astype(str).str.replace('\n', '').str.replace(' ', '').str.strip()
 
         if not {"거래일자", "가맹점명", "이용금액"}.issubset(df.columns):
-            print("[하나카드] 필수 컬럼 누락:", df.columns.tolist())
+            st.error("[하나카드] ❌ 필수 컬럼 누락: " + ", ".join(df.columns))
             return None
 
         df = df[["거래일자", "가맹점명", "이용금액"]].copy()
@@ -171,13 +171,16 @@ def parse_hana(file):
         df["카드"] = "하나카드"
         df["카테고리"] = ""
 
-        # ✅ 진짜로 날짜처럼 보이는 값만 남기기
         df = df[df["날짜"].apply(is_date_like)]
+
+        # ✅ 스트림릿 로그 출력
+        st.info(f"✅ 하나카드 파싱 결과: {len(df)}건")
+        st.dataframe(df)
 
         return df[["날짜", "카드", "카테고리", "사용처", "금액"]]
 
     except Exception as e:
-        print("하나카드 파싱 오류:", e)
+        st.error(f"[하나카드] 파싱 오류 발생: {e}")
         return None
 
 # --- 삼성카드 ---
