@@ -39,21 +39,24 @@ def normalize_card_name(card):
 
 if uploaded_files:
     all_records = []
-    for file in uploaded_files:
-        st.markdown(f"---\n### 📂 {file.name}")
 
-        card_issuer = detect_card_issuer(file)
-       
-        if not card_issuer:
-            st.warning(f"❌ 카드사 인식 실패: {file.name}")
-            continue
+    # ✅ 업로드 결과 메시지 10개까지 한 페이지에 보이도록 컨테이너 사용
+    with st.container():
+        for file in uploaded_files:
+            st.markdown(f"---\n### 📂 {file.name}")
 
-        df = parse_card_file(file, card_issuer)
-        if df is not None:
-            all_records.append(df)
-            st.success(f"✅ {card_issuer} 내역 처리 완료: {len(df)}건")
-        else:
-            st.warning(f"⚠️ {card_issuer} 내역 파싱 실패")
+            card_issuer = detect_card_issuer(file)
+            
+            if not card_issuer:
+                st.warning(f"❌ 카드사 인식 실패: {file.name}")
+                continue
+
+            df = parse_card_file(file, card_issuer)
+            if df is not None:
+                all_records.append(df)
+                st.success(f"✅ {card_issuer} 내역 처리 완료: {len(df)}건")
+            else:
+                st.warning(f"⚠️ {card_issuer} 내역 파싱 실패")
 
     if all_records:
         final_df = pd.concat(all_records, ignore_index=True)
