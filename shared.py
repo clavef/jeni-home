@@ -6,11 +6,11 @@ def show_menu(active_page: str):
         <style>
             .sidebar-header {
                 text-align: left;
-                margin-bottom: 1.5rem;
+                margin-bottom: 0.8rem; /* 기존 1.5rem → 줄임 */
             }
             .sidebar-header img {
                 width: 140px;
-                margin-bottom: 0.5rem;
+                margin-bottom: 0.3rem; /* 기존 0.5rem → 줄임 */
             }
         </style>
     """, unsafe_allow_html=True)
