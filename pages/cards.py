@@ -1,5 +1,3 @@
-cards v3
-
 # cards.py (제니앱 - 카드값 계산기)
 
 import streamlit as st
@@ -8,7 +6,7 @@ import sys
 import os
 sys.path.append(os.path.abspath(os.path.dirname(__file__)))
 
-from prism import detect_card_issuer, parse_card_file  # ✅ 디버깅용 함수 제거
+from prism import detect_card_issuer, parse_card_file
 from shared import show_menu
 
 st.set_page_config(page_title="카드값 계산기 - 제니앱", page_icon="💳", layout="wide")
@@ -28,7 +26,7 @@ if uploaded_files:
         st.markdown(f"---\n### 📂 {file.name}")
 
         card_issuer = detect_card_issuer(file)
-       
+
         if not card_issuer:
             st.warning(f"❌ 카드사 인식 실패: {file.name}")
             continue
@@ -42,10 +40,14 @@ if uploaded_files:
 
     if all_records:
         final_df = pd.concat(all_records, ignore_index=True)
+
+        # ✅ 금액 쉼표 표시
+        final_df["금액"] = final_df["금액"].apply(lambda x: f"{int(x):,}")
+
         st.subheader("📋 통합 카드 사용 내역")
         st.dataframe(final_df, use_container_width=True)
 
-        # 엑셀 다운로드
+        # ✅ 엑셀 다운로드 함수
         @st.cache_data
         def to_excel(df):
             from io import BytesIO
