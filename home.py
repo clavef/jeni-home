@@ -25,7 +25,7 @@ if st.button("▶️ 카드값 계산기 실행하기"):
 st.markdown("\n---")
 
 st.markdown("### 📊 정산 도우미")
-st.write("엑셀 파일을 업로드해 BL별 금액 누락 및 불일치를 자동으로 비교합니다.")
+st.write("엑셀 파일을 업로드해 MBL별 금액 누락 및 불일치를 자동으로 비교합니다.")
 if st.button("▶️ 정산 도우미 실행하기"):
     st.switch_page("pages/audit.py")
 
