@@ -113,14 +113,24 @@ def parse_kb(file):
 # --- 신한카드 ---
 def parse_shinhan(file):
     try:
+        import pandas as pd
+
         xls = pd.ExcelFile(file)
         sheet = xls.sheet_names[0]
         df = xls.parse(sheet, skiprows=2)
-        df = df[["거래일자", "이용가맹점", "거래금액"]]
+
+        # ✅ 필수 컬럼만 선택
+        df = df[["거래일자", "이용가맹점", "결제 금액"]]
         df.columns = ["날짜", "사용처", "금액"]
+
+        # ✅ 숫자 포맷 정리
+        df["금액"] = pd.to_numeric(df["금액"], errors="coerce")
+
         df["카드"] = "신한카드"
         df["카테고리"] = ""
+
         return df[["날짜", "카드", "카테고리", "사용처", "금액"]]
+
     except Exception as e:
         print("신한카드 파싱 오류:", e)
         return None
