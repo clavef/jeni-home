@@ -75,16 +75,22 @@ def parse_lotte(file):
     try:
         xls = pd.ExcelFile(file)
         sheet_name = xls.sheet_names[0]
-        df = xls.parse(sheet_name, skiprows=2)
+
+        # ✅ skiprows를 8로 조정해서 실제 헤더가 나오는 줄에 맞춤
+        df = xls.parse(sheet_name, skiprows=8)
         df.columns = df.columns.str.strip()
 
+        # ✅ 필요 컬럼 존재 여부 확인
         required_cols = ["이용일자", "이용가맹점", "업종", "이용금액", "취소여부"]
         missing = [col for col in required_cols if col not in df.columns]
         if missing:
+            print(f"[롯데카드] 누락된 필수 컬럼: {missing}")
             return None
 
+        # ✅ 취소 거래 제외
         df = df[df["취소여부"].astype(str).str.upper() != "Y"]
 
+        # ✅ 필요한 컬럼만 추출하고 포맷 통일
         df = df[["이용일자", "이용가맹점", "업종", "이용금액"]].copy()
         df.columns = ["날짜", "사용처", "카테고리", "금액"]
         df["카드"] = "롯데카드"
