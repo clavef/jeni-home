@@ -8,7 +8,7 @@ show_menu("home")
 
 # 홈 타이틀 영역에 좌측 정렬된 로고 표시 (1.5배 확대)
 st.markdown("""
-    <div style="display: flex; align-items: center; margin-bottom: 1.5rem;">
+    <div style="display: flex; align-items: center; margin-bottom: 0.5rem;">
         <img src="https://raw.githubusercontent.com/clavef/jeniapp/main/logo.png" alt="Jeniapp Logo" style="height: 60px;">
     </div>
 """, unsafe_allow_html=True)
