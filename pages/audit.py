@@ -1,4 +1,5 @@
-# pages/audit.py
+# pages/audit.py (정산 도우미 v2)
+
 import streamlit as st
 st.set_page_config(page_title="정산 도우미", page_icon="📊", layout="wide")
 
@@ -8,12 +9,27 @@ from shared import show_menu
 show_menu("정산 도우미")
 
 st.title("📊 정산 도우미")
+
+# ✅ 사용법 안내
+st.markdown("""
+### 📝 사용 방법
+
+1. **KZ, SNC 직원들의 월합정산을 돕는 용도입니다.** 
+   각자 관리하는 엑셀 내역을 업로드하면 **MBL 기준으로 금액을 비교**해줍니다.
+
+2. **정산요청중인 금액은 수동 입력란에 직접 입력**해주세요. 
+   해당 금액은 **KZ 합계에 포함되어 계산**됩니다.
+
+3. **KZ 엑셀은 구버전 .xls 형식으로 제공**됩니다. 
+   엑셀에서 파일을 연 뒤, 반드시 **[다른 이름으로 저장 → .xlsx] 형식으로 저장 후 업로드**해주세요.
+""")
+
 st.write("KZ와 SNC의 엑셀 파일을 업로드하여 MBL별 금액 비교 결과를 확인하세요.")
 
 file_kz = st.file_uploader("KZ 엑셀 파일 업로드 (.xlsx)", type=["xlsx"], key="kz")
 file_snc = st.file_uploader("SNC 엑셀 파일 업로드 (.xlsx)", type=["xlsx"], key="snc")
 
-# 수동 입력 필드
+# 이하 기존 코드 동일
 manual_kz = st.number_input("KZ 미승인 금액 수동 입력 (원)", min_value=0, value=0, step=10000, format="%d")
 
 if file_kz and file_snc:
@@ -56,7 +72,6 @@ if file_kz and file_snc:
         compare_df['비고'] = compare_df.apply(lambda row: compare_lists(row['승인금액'], row['금액_SNC']), axis=1)
         result_df = compare_df[compare_df['비고'] != '일치'].sort_values(by='MBL')
         result_df.columns = ['MBL#', 'KZ금액', 'SNC금액', '비고']
-
         result_df.insert(0, '번호', range(1, len(result_df) + 1))
 
         kz_total = sum([sum(x) if isinstance(x, list) else 0 for x in compare_df['승인금액']]) + manual_kz
