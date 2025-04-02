@@ -1,6 +1,7 @@
-# prism.py - 카드사 자동 인식 및 파싱 모듈 (fuzzy match 강화)
+# prism.py - 카드사 자동 인식 및 파싱 모듈 (디버깅 로그 추가)
 
 import pandas as pd
+import streamlit as st
 from typing import Optional
 
 # --- 카드사 자동 인식 ---
@@ -25,18 +26,27 @@ def detect_card_issuer(file) -> Optional[str]:
             "하나카드": ["항목", "구분", "날짜", "사용처", "금액"],
         }
 
+        st.write(f"📁 파일명: {file.name}")
+
         for sheet in xls.sheet_names:
             df = xls.parse(sheet, header=None)
+            st.write(f"📄 시트: {sheet}")
             for i in range(len(df)):
                 row = df.iloc[i]
                 normed = [normalize(cell) for cell in row if pd.notna(cell)]
+                if not normed:
+                    continue
+                st.write(f"🧩 행 {i}: {normed}")
                 for issuer, keywords in patterns.items():
                     if fuzzy_match(normed, keywords):
+                        st.success(f"✅ 인식됨: {issuer} (행 {i})")
                         return issuer
 
+        st.error("❌ 어떤 카드사도 인식되지 않음")
         return None
+
     except Exception as e:
-        print("[ERROR] detect_card_issuer 예외 발생:", e)
+        st.error(f"[ERROR] detect_card_issuer 예외 발생: {e}")
         return None
 
 # --- 카드사별 파서 연결 ---
