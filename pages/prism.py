@@ -28,32 +28,37 @@ def detect_card_issuer(file) -> Optional[str]:
         if "■ 국내이용내역" in sheet_names:
             return "삼성카드"
 
-        df_preview = xls.parse(sheet_names[0], nrows=5)
-        cols = df_preview.columns.astype(str).str.strip().tolist()
-        colset = set(cols)
+        def normalize(col):
+            return str(col).replace('\n', '').replace('\r', '').replace(' ', '').strip()
 
-        print(f"[DEBUG] {file.name} 열 목록:")
-        for c in cols:
-            print(f"- {c}")
+        # 시트 전체 순회하며 헤더 후보 탐색 (확장: 50행까지)
+        for sheet in xls.sheet_names:
+            df = xls.parse(sheet, header=None, nrows=50)
+            for i in range(len(df)):
+                row = df.iloc[i].dropna().astype(str).tolist()
+                norm = [normalize(c) for c in row]
+                colset = set(norm)
 
-        # 열 조합 기반 인식
-        if {"이용일자", "이용가맹점", "업종", "이용금액"}.issubset(colset):
-            return "롯데카드"
-        if {"이용일", "이용하신곳", "이용카드명", "국내이용금액\n(원)"}.issubset(colset):
-            return "KB국민카드"
-        if {"거래일자", "이용가맹점", "거래금액"}.issubset(colset):
-            return "신한카드"
-        if {"이용일", "이용가맹점", "이용금액"}.issubset(colset):
-            return "현대카드"
-        if {"승인일자", "가맹점명", "승인금액(원)"}.issubset(colset):
-            return "삼성카드"
-        if {"항목", "구분", "이용일자", "이용금액"}.intersection(colset):
-            return "하나카드"
+                if {"이용일자", "이용가맹점", "업종", "이용금액"}.issubset(colset):
+                    return "롯데카드"
+                if {"이용일", "이용하신곳", "이용카드명", "국내이용금액(원)"}.issubset(colset):
+                    return "KB국민카드"
+                if {"거래일자", "이용가맹점", "거래금액"}.issubset(colset):
+                    return "신한카드"
+                if {"이용일", "이용가맹점", "이용금액"}.issubset(colset):
+                    return "현대카드"
+                if {"승인일자", "가맹점명", "승인금액(원)"}.issubset(colset):
+                    return "삼성카드"
+                if {"항목", "구분", "이용일자", "이용금액"}.intersection(colset):
+                    return "하나카드"
 
         return None
     except Exception as e:
         print("[ERROR] detect_card_issuer 예외 발생:", e)
         return None
+
+# --- 카드사별 파서 연결 ---
+def parse_card_file(file, issuer: str) -> Optional[pd.DataFrame]:
     if issuer == "롯데카드":
         return parse_lotte(file)
     if issuer == "KB국민카드":
