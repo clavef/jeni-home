@@ -23,21 +23,11 @@ uploaded_files = st.file_uploader(
 if uploaded_files:
     all_records = []
     for file in uploaded_files:
+        st.markdown(f"---\n### 📂 {file.name}")
+
         card_issuer = detect_card_issuer(file)
         if not card_issuer:
             st.warning(f"❌ 카드사 인식 실패: {file.name}")
-
-            # 디버깅용 열 확인 코드
-            st.write(f"📁 {file.name} 열 샘플:")
-            try:
-                xls = pd.ExcelFile(file)
-                for sheet in xls.sheet_names:
-                    df = xls.parse(sheet, header=None, nrows=50)
-                    st.write(f"📄 Sheet: {sheet}")
-                    st.dataframe(df)
-            except Exception as e:
-                st.error(f"파일 미리보기 오류: {e}")
-
             continue
 
         df = parse_card_file(file, card_issuer)
