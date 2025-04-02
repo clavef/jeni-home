@@ -42,7 +42,7 @@ if uploaded_files:
         st.markdown(f"---\n### 📂 {file.name}")
 
         card_issuer = detect_card_issuer(file)
-       
+
         if not card_issuer:
             st.warning(f"❌ 카드사 인식 실패: {file.name}")
             continue
@@ -52,66 +52,69 @@ if uploaded_files:
             all_records.append(df)
             st.success(f"✅ {card_issuer} 내역 처리 완료: {len(df)}건")
         else:
-            st.warning(f"⚠️ {card_issuer} 내역 파싱 실패")
+            st.warning(f"⚠️ {card_issuer} 내역 파시마 실패")
 
 if uploaded_files and all_records:
     final_df = pd.concat(all_records, ignore_index=True)
 
     # ✅ 카드명 정리
-    final_df["카드"] = final_df["카드"].apply(normalize_card_name)
+    final_df["\uce74\ub4dc"] = final_df["\uce74\ub4dc"].apply(normalize_card_name)
 
     st.subheader("📋 통합 카드 사용 내역")
     st.dataframe(final_df, use_container_width=True)
 
-    # ✅ 엑셀 다운로드 함수
+    # ✅ 엘셀 다운로드 함수
     @st.cache_data
     def to_excel(df):
         from io import BytesIO
         from openpyxl import Workbook
         from openpyxl.utils.dataframe import dataframe_to_rows
-        from openpyxl.styles import Alignment, numbers
+        from openpyxl.styles import Alignment, NamedStyle, numbers
 
         output = BytesIO()
         wb = Workbook()
         ws = wb.active
         ws.title = '카드내역'
 
-        for r_idx, row in enumerate(dataframe_to_rows(df, index=False, header=True), 1):
-            ws.append(row)
+        # 데이터프리마 쓰기
+        for r in dataframe_to_rows(df, index=False, header=True):
+            ws.append(r)
 
-            if r_idx == 1:
-                continue  # 헤더 건너뜀
-
-            # 열별 정렬
-            ws.cell(row=r_idx, column=1).alignment = Alignment(horizontal="center")  # 날짜
-            ws.cell(row=r_idx, column=2).alignment = Alignment(horizontal="center")  # 카드
-            ws.cell(row=r_idx, column=3).alignment = Alignment(horizontal="left")    # 카테고리
-            ws.cell(row=r_idx, column=4).alignment = Alignment(horizontal="left")    # 사용처
-
-            # ✅ 금액: 숫자 서식 "#,##0"
-            cell = ws.cell(row=r_idx, column=5)
-            try:
-                cell.value = float(str(cell.value).replace(",", ""))
-                cell.number_format = '#,##0'
-            except:
-                pass
-
-        # 열 너비 조정
+        # 여름 너비 조정
         col_widths = {
             'A': 11,  # 날짜
             'B': 11,  # 카드
             'C': 20,  # 카테고리
-            'D': 40,  # 사용처
+            'D': 40,  # 사용체
             'E': 11,  # 금액
         }
         for col, width in col_widths.items():
             ws.column_dimensions[col].width = width
 
+        # 가능한 포맷 바꾸기 (25.03.29)
+        for row in ws.iter_rows(min_row=2, max_col=1):
+            for cell in row:
+                try:
+                    cell.number_format = 'yy.mm.dd'
+                except:
+                    pass
+
+        # 금액: 숫자지만 포맷은 #,##0 적용
+        for row in ws.iter_rows(min_row=2, min_col=5, max_col=5):
+            for cell in row:
+                cell.number_format = '#,##0'
+                cell.alignment = Alignment(horizontal='right', vertical='center')
+
+        # 기타 여름: 왼쪽 정렬
+        for row in ws.iter_rows(min_row=2, max_col=4):
+            for cell in row:
+                cell.alignment = Alignment(horizontal='left', vertical='center')
+
         wb.save(output)
         return output.getvalue()
 
     st.download_button(
-        label="📥 엑셀로 다운로드",
+        label="📅 엘셀로 다운로드",
         data=to_excel(final_df),
         file_name="카드값_통합내역.xlsx",
         mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
