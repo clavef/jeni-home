@@ -8,7 +8,7 @@ sys.path.append(os.path.abspath(os.path.dirname(__file__)))
 
 from prism import detect_card_issuer, parse_card_file
 from shared import show_menu
-from pages.rules import categorize
+from rules import categorize
 
 st.set_page_config(page_title="카드값 계산기 - 제니앱", page_icon="💳", layout="wide")
 show_menu("카드값 계산기")
