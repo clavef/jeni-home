@@ -128,30 +128,21 @@ def parse_shinhan(file):
 # --- 현대카드 ---
 def parse_hyundai(file):
     try:
-        import pandas as pd
-
         xls = pd.ExcelFile(file)
         sheet = xls.sheet_names[0]
         df = xls.parse(sheet, skiprows=2)
 
-        # ✅ 소계·합계 등 제거
-        df = df[~df["이용가맹점"].astype(str).str.contains("합계|소계|총|이월", na=False)]
-
-        # ✅ 날짜 컬럼 → 엑셀 날짜 숫자 복원 (serial → 날짜)
-        if pd.api.types.is_numeric_dtype(df["이용일"]):
-            df["이용일"] = pd.to_datetime("1899-12-30") + pd.to_timedelta(df["이용일"], unit="D")
-        else:
-            df["이용일"] = pd.to_datetime(df["이용일"], errors="coerce")
-
-        df["이용일"] = df["이용일"].dt.strftime("%Y.%m.%d")  # 보기 좋게 포맷
-
-        df = df[["이용일", "이용가맹점", "이용금액"]]
+        df = df[["이용일", "이용가맹점", "이용금액"]].copy()
         df.columns = ["날짜", "사용처", "금액"]
+
+        # ✅ 엑셀 시리얼 넘버 날짜 처리
+        df["날짜"] = pd.to_datetime(df["날짜"], unit="d", origin="1899-12-30", errors="coerce")
+        df["날짜"] = df["날짜"].dt.strftime("%Y-%m-%d")  # 형식 예쁘게
+
         df["카드"] = "현대카드"
         df["카테고리"] = ""
 
         return df[["날짜", "카드", "카테고리", "사용처", "금액"]]
-
     except Exception as e:
         print("현대카드 파싱 오류:", e)
         return None
