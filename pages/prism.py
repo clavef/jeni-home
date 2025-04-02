@@ -99,23 +99,53 @@ def parse_lotte(file):
 # --- KB국민카드 ---
 def parse_kb(file):
     try:
+        import pandas as pd
+
         xls = pd.ExcelFile(file)
         sheet = xls.sheet_names[0]
         df = xls.parse(sheet, skiprows=6)
 
-        # ✅ '상태' 컬럼에 '승인취소' 또는 '취소전표매입'이 포함된 행 제거
+        # ❗ 승인취소 / 취소전표매입 제외
         if "상태" in df.columns:
-            df = df[~df["상태"].astype(str).str.contains("승인취소|취소전표매입", na=False)]
+            df = df[~df["상태"].astype(str).str.contains("승인취소|취소전표", na=False)]
 
-        df = df[["이용일", "이용하신곳", "이용카드명", "국내이용금액\n(원)"]]
-        df.columns = ["날짜", "사용처", "카드", "금액"]
+        # ✅ 필요한 컬럼만 추출
+        df = df[["이용일", "이용하신곳", "이용카드명", "국내이용금액\n(원)", "결제방법"]]
+        df.columns = ["날짜", "사용처", "카드", "금액", "결제방법"]
 
-        # ✅ 날짜 포맷 통일
+        # ✅ 날짜 형식 통일
         df["날짜"] = pd.to_datetime(df["날짜"], errors="coerce").dt.strftime("%Y.%m.%d")
 
-        df["카테고리"] = ""
+        # ✅ 금액 숫자 처리
+        df["금액"] = df["금액"].astype(str).str.replace(",", "").astype(int)
 
-        return df[["날짜", "카드", "카테고리", "사용처", "금액"]]
+        # ✅ 할부 처리
+        def split_installments(row):
+            method = row["결제방법"]
+            if method != "일시불" and any(char.isdigit() for char in method):
+                months = int(''.join(filter(str.isdigit, method)))
+                amount = round(row["금액"] / months)
+                return pd.DataFrame({
+                    "날짜": [row["날짜"]] * months,
+                    "카드": [row["카드"]] * months,
+                    "카테고리": [""] * months,
+                    "사용처": [row["사용처"]] * months,
+                    "금액": [amount] * months
+                })
+            else:
+                return pd.DataFrame({
+                    "날짜": [row["날짜"]],
+                    "카드": [row["카드"]],
+                    "카테고리": [""],
+                    "사용처": [row["사용처"]],
+                    "금액": [row["금액"]]
+                })
+
+        split_rows = [split_installments(row) for _, row in df.iterrows()]
+        df_result = pd.concat(split_rows, ignore_index=True)
+
+        return df_result[["날짜", "카드", "카테고리", "사용처", "금액"]]
+
     except Exception as e:
         print("KB국민카드 파싱 오류:", e)
         return None
