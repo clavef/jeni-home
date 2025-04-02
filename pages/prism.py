@@ -10,7 +10,6 @@ def detect_card_issuer(file) -> Optional[str]:
         def normalize(text):
             return str(text).replace('\n', '').replace('\r', '').replace(' ', '').strip()
 
-        # 카드사별 시그니처 열 조합
         patterns = {
             "롯데카드": {"이용일자", "이용가맹점", "업종", "이용금액"},
             "KB국민카드": {"이용일", "이용하신곳", "이용카드명", "국내이용금액(원)"},
@@ -50,42 +49,49 @@ def parse_card_file(file, issuer: str) -> Optional[pd.DataFrame]:
         return parse_samsung(file)
     return None
 
-# --- 롯데카드 ---
-def parse_lotte(file):
-    import streamlit as st  # 내부 디버깅용 출력
-
+# --- 롯데카드 디버깅용 ---
+def parse_lotte_debug(file):
+    import streamlit as st
     try:
         xls = pd.ExcelFile(file)
 
         st.write("📄 시트 목록:", xls.sheet_names)
+
         sheet_name = xls.sheet_names[0]
-        st.write(f"✅ 첫 시트 선택: `{sheet_name}`")
+        st.write(f"✅ 선택된 시트: `{sheet_name}`")
 
         df = xls.parse(sheet_name, skiprows=2)
         df.columns = df.columns.str.strip()
-        st.write("📊 컬럼 목록:", df.columns.tolist())
+        st.write("📊 전체 컬럼 목록:", df.columns.tolist())
+        st.write("🔍 데이터 미리보기", df.head())
 
-        # 필수 컬럼 확인
+        return df
+    except Exception as e:
+        st.error(f"❌ 롯데카드 디버깅 실패: {e}")
+        return None
+
+# --- 롯데카드 ---
+def parse_lotte(file):
+    try:
+        xls = pd.ExcelFile(file)
+        sheet_name = xls.sheet_names[0]
+        df = xls.parse(sheet_name, skiprows=2)
+        df.columns = df.columns.str.strip()
+
         required_cols = ["이용일자", "이용가맹점", "업종", "이용금액", "취소여부"]
         missing = [col for col in required_cols if col not in df.columns]
         if missing:
-            st.error(f"❌ 누락된 필수 컬럼: {missing}")
             return None
 
-        st.success("✅ 필수 컬럼 모두 존재")
-
-        # 취소된 거래 제외
         df = df[df["취소여부"].astype(str).str.upper() != "Y"]
 
         df = df[["이용일자", "이용가맹점", "업종", "이용금액"]].copy()
         df.columns = ["날짜", "사용처", "카테고리", "금액"]
         df["카드"] = "롯데카드"
 
-        st.write("✅ 최종 파싱 결과", df.head())
         return df[["날짜", "카드", "카테고리", "사용처", "금액"]]
-
     except Exception as e:
-        st.error(f"❌ 롯데카드 파싱 오류: {e}")
+        print("롯데카드 파싱 오류:", e)
         return None
 
 # --- KB국민카드 ---
@@ -148,10 +154,8 @@ def parse_hana(file):
         df.columns = ["항목", "구분", "날짜", "사용처", "금액"]
         df["카드"] = "하나카드"
         df["카테고리"] = df["구분"]
-        
-        # 불필요한 행 제거
         df = df[~df["날짜"].str.contains("하나카드|포인트|이벤트", na=False)]
-        
+
         return df[["날짜", "카드", "카테고리", "사용처", "금액"]]
     except Exception as e:
         print("하나카드 파싱 오류:", e)
