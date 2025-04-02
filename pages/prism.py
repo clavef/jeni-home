@@ -8,8 +8,9 @@ def detect_card_issuer(file) -> Optional[str]:
     try:
         xls = pd.ExcelFile(file)
         sheet_names = [name.strip() for name in xls.sheet_names]
-
         file_name = file.name.lower()
+
+        # 파일명 키워드 기반
         if "lotte" in file_name or "veex" in file_name:
             return "롯데카드"
         if "shinhan" in file_name or "신한" in file_name:
@@ -20,26 +21,29 @@ def detect_card_issuer(file) -> Optional[str]:
             return "하나카드"
         if "kb" in file_name or "국민" in file_name:
             return "KB국민카드"
-        if "삼성" in file_name or "할부" in file_name:
+        if "samsung" in file_name or "삼성" in file_name or "할부" in file_name:
             return "삼성카드"
 
+        # 시트명 기반
         if "■ 국내이용내역" in sheet_names:
             return "삼성카드"
 
         df_preview = xls.parse(sheet_names[0], nrows=5)
-        cols = df_preview.columns.astype(str).str.lower().tolist()
+        cols = df_preview.columns.astype(str).str.strip().tolist()
+        colset = set(cols)
 
-        if any("가맹점명" in c and "승인" in c for c in cols):
-            return "삼성카드"
-        if any("이용가맹점" in c for c in cols) and any("veex" in str(xls.parse(sheet_names[0]).to_string()).lower()):
+        # 열 조합 기반 인식
+        if {"이용일자", "이용가맹점", "업종", "이용금액"}.issubset(colset):
             return "롯데카드"
-        if any("이용카드명" in c for c in cols) and any("kb국민" in str(xls.parse(sheet_names[0]).to_string()).lower()):
+        if {"이용일", "이용하신곳", "이용카드명", "국내이용금액\n(원)"}.issubset(colset):
             return "KB국민카드"
-        if any("네이버페이" in str(xls.parse(sheet_names[0]).to_string()).lower()):
-            return "현대카드"
-        if any("준디지털" in str(xls.parse(sheet_names[0]).to_string()).lower()):
+        if {"거래일자", "이용가맹점", "거래금액"}.issubset(colset):
             return "신한카드"
-        if any("이용상세내역" in sheet.lower() for sheet in sheet_names):
+        if {"이용일", "이용가맹점", "이용금액"}.issubset(colset):
+            return "현대카드"
+        if {"승인일자", "가맹점명", "승인금액(원)"}.issubset(colset):
+            return "삼성카드"
+        if {"항목", "구분", "이용일자", "이용금액"}.intersection(colset):
             return "하나카드"
 
         return None
