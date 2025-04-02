@@ -6,7 +6,7 @@ import sys
 import os
 sys.path.append(os.path.abspath(os.path.dirname(__file__)))
 
-from prism import detect_card_issuer, parse_card_file, parse_lotte_debug  # <- 디버깅 함수 import
+from prism import detect_card_issuer, parse_card_file, parse_lotte_debug  # 디버깅 함수 포함
 from shared import show_menu
 
 st.set_page_config(page_title="카드값 계산기 - 제니앱", page_icon="💳", layout="wide")
@@ -21,18 +21,22 @@ uploaded_files = st.file_uploader(
 )
 
 if uploaded_files:
+    # ✅ 디버깅: 첫 번째 파일을 무조건 분석
+    file = uploaded_files[0]
+    st.markdown(f"---\n### 🧪 디버깅 모드 - {file.name}")
+    st.warning("현재 첫 번째 업로드된 파일을 디버깅 중입니다 (롯데카드 파일 예상)")
+
+    # 디버깅 로그 출력
+    _ = parse_lotte_debug(file)
+    st.stop()
+
+    # 👇 아래 코드는 디버깅 종료 후에만 작동됨
     all_records = []
     for file in uploaded_files:
         st.markdown(f"---\n### 📂 {file.name}")
 
-        # ✅ 롯데카드 디버깅 모드
-        if "lotte" in file.name.lower() or "롯데" in file.name:
-            st.warning("🛠 롯데카드 디버깅 모드 실행 중...")
-            _ = parse_lotte_debug(file)
-            st.stop()  # 디버깅 전용으로 멈춤
-
         card_issuer = detect_card_issuer(file)
-       
+        
         if not card_issuer:
             st.warning(f"❌ 카드사 인식 실패: {file.name}")
             continue
