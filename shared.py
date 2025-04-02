@@ -6,11 +6,11 @@ def show_menu(active_page: str):
         <style>
             .sidebar-header {
                 text-align: left;
-                margin-bottom: 0.8rem; /* 기존 1.5rem → 줄임 */
+                margin-bottom: 0.8rem;
             }
             .sidebar-header img {
                 width: 140px;
-                margin-bottom: 0.3rem; /* 기존 0.5rem → 줄임 */
+                margin-bottom: 0.3rem;
             }
         </style>
     """, unsafe_allow_html=True)
@@ -26,10 +26,12 @@ def show_menu(active_page: str):
         unsafe_allow_html=True
     )
 
-    # 표시되는 페이지들
-    st.sidebar.page_link("pages/check.py", label="인스타 언팔체크", icon="📱")
-    st.sidebar.page_link("pages/cards.py", label="카드값 계산기", icon="💳")
+    # 모든 페이지를 버튼 + switch_page로 처리
+    if st.sidebar.button("📱 인스타 언팔체크"):
+        st.switch_page("pages/check.py")
 
-    # 숨긴 페이지 → 버튼으로 이동 처리
+    if st.sidebar.button("💳 카드값 계산기"):
+        st.switch_page("pages/cards.py")
+
     if st.sidebar.button("📊 정산 도우미"):
         st.switch_page("pages/_audit.py")
