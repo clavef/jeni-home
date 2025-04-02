@@ -1,4 +1,4 @@
-# prism.py - 카드사 자동 인식 및 파싱 모듈 (부분 포함 허용)
+# prism.py - 카드사 자동 인식 및 파싱 모듈 (fuzzy match 강화)
 
 import pandas as pd
 from typing import Optional
