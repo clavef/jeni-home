@@ -1,4 +1,4 @@
-# prism.py - 카드사 자동 인식 및 파싱 모듈 (정밀 탐지 모드)
+# prism.py - 카드사 자동 인식 및 파싱 모듈 (헤더 위치 정밀 탐지)
 
 import pandas as pd
 from typing import Optional
@@ -9,24 +9,10 @@ def detect_card_issuer(file) -> Optional[str]:
         xls = pd.ExcelFile(file)
         file_name = file.name.lower()
 
-        # 파일명 기반 힌트 (예비 판단용)
-        if "lotte" in file_name or "veex" in file_name:
-            return "롯데카드"
-        if "shinhan" in file_name or "신한" in file_name:
-            return "신한카드"
-        if "hyundai" in file_name or "현대" in file_name:
-            return "현대카드"
-        if "hana" in file_name or "이용상세내역" in file_name:
-            return "하나카드"
-        if "kb" in file_name or "국민" in file_name:
-            return "KB국민카드"
-        if "samsung" in file_name or "삼성" in file_name or "할부" in file_name:
-            return "삼성카드"
+        def normalize(text):
+            return str(text).replace('\n', '').replace('\r', '').replace(' ', '').strip()
 
-        def norm(col):
-            return str(col).replace("\\n", "").replace("\\r", "").replace(" ", "").strip()
-
-        # 카드사별 열 조합
+        # 카드사별 시그니처 열 조합
         patterns = {
             "롯데카드": {"이용일자", "이용가맹점", "업종", "이용금액"},
             "KB국민카드": {"이용일", "이용하신곳", "이용카드명", "국내이용금액(원)"},
@@ -36,12 +22,11 @@ def detect_card_issuer(file) -> Optional[str]:
             "하나카드": {"항목", "구분", "날짜", "사용처", "금액"},
         }
 
-        # 모든 시트에서 행 단위 탐색
         for sheet in xls.sheet_names:
             df = xls.parse(sheet, header=None)
             for i in range(len(df)):
-                row = df.iloc[i].dropna().astype(str).tolist()
-                normed = set(norm(c) for c in row)
+                row = df.iloc[i]
+                normed = set(normalize(cell) for cell in row if pd.notna(cell))
                 for issuer, keywords in patterns.items():
                     if keywords <= normed:
                         return issuer
@@ -50,22 +35,6 @@ def detect_card_issuer(file) -> Optional[str]:
     except Exception as e:
         print("[ERROR] detect_card_issuer 예외 발생:", e)
         return None
-
-# --- 카드사별 파서 연결 ---
-def parse_card_file(file, issuer: str) -> Optional[pd.DataFrame]:
-    if issuer == "롯데카드":
-        return parse_lotte(file)
-    if issuer == "KB국민카드":
-        return parse_kb(file)
-    if issuer == "신한카드":
-        return parse_shinhan(file)
-    if issuer == "현대카드":
-        return parse_hyundai(file)
-    if issuer == "하나카드":
-        return parse_hana(file)
-    if issuer == "삼성카드":
-        return parse_samsung(file)
-    return None
 
 # --- 카드사별 파서 연결 ---
 def parse_card_file(file, issuer: str) -> Optional[pd.DataFrame]:
