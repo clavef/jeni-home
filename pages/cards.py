@@ -1,4 +1,4 @@
-# cards.py (제니앱 - 카드값 계산기 v18)
+# cards.py (제니앱 - 카드값 계산기 v19)
 
 import streamlit as st
 import pandas as pd
@@ -80,10 +80,16 @@ if uploaded_files:
             ws = wb.active
             ws.title = '카드내역'
 
+            # ✅ 신한카드 색상 포함
             color_map_card = {
-                "국민카드": "FBE2D5", "현대카드": "DDEBF7", "롯데카드": "CCCCFF",
-                "삼성카드": "E2EFDA", "하나카드": "FFF2CC",
+                "국민카드": "FBE2D5",
+                "현대카드": "DDEBF7",
+                "롯데카드": "CCCCFF",
+                "삼성카드": "E2EFDA",
+                "하나카드": "FFF2CC",
+                "신한카드": "DDD9C4",
             }
+
             color_map_category = {
                 "교통/주유/주차": "CCFFCC", "병원/약국": "FFCC99",
                 "취미/쇼핑": "FFF2CC", "음식점/카페/편의점": "FFCCCC",
@@ -95,7 +101,6 @@ if uploaded_files:
                 top=Side(style='thin'), bottom=Side(style='thin')
             )
 
-            # 표 본문 작성
             ws.append(df.columns.tolist())
             for cell in ws[1]:
                 cell.fill = PatternFill(start_color="000000", end_color="000000", fill_type="solid")
@@ -108,8 +113,8 @@ if uploaded_files:
 
             for i, width in enumerate([11, 11, 20, 40, 15]):
                 ws.column_dimensions[chr(65 + i)].width = width
-            ws.column_dimensions['F'].width = 3  # F열 너비
-            ws.column_dimensions['I'].width = 3  # I열 너비 (차트 간격용)
+            ws.column_dimensions['F'].width = 3
+            ws.column_dimensions['I'].width = 3
 
             ws.sheet_view.showGridLines = False
 
@@ -187,7 +192,7 @@ if uploaded_files:
             ws[f"G{row_idx}"].font = ws[f"H{row_idx}"].font = Font(color="FFFFFF", bold=True)
             ws[f"G{row_idx}"].border = ws[f"H{row_idx}"].border = thin_border
 
-            # ✅ 카테고리별 원형 차트 (J1)
+            # 카테고리별 원형 차트
             pie1 = PieChart()
             pie1.title = "카테고리별 사용 비중"
             labels1 = Reference(ws, min_col=7, min_row=2, max_row=7)
@@ -202,7 +207,7 @@ if uploaded_files:
                 pie1.series[0].data_points.append(dp)
             ws.add_chart(pie1, "J1")
 
-            # ✅ 카드사별 원형 차트 (J14)
+            # 카드사별 원형 차트
             pie2 = PieChart()
             pie2.title = "카드사별 사용 비중"
             labels2 = Reference(ws, min_col=7, min_row=11, max_row=16)
