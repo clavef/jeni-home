@@ -8,7 +8,7 @@ sys.path.append(os.path.abspath(os.path.dirname(__file__)))
 
 from prism import detect_card_issuer, parse_card_file
 from shared import show_menu
-from pages.rules import guess_category  # ✅ rules.py에서 분류 함수 불러오기
+from pages.rules import categorize
 
 st.set_page_config(page_title="카드값 계산기 - 제니앱", page_icon="💳", layout="wide")
 show_menu("카드값 계산기")
@@ -58,7 +58,10 @@ if uploaded_files:
     if all_records:
         final_df = pd.concat(all_records, ignore_index=True)
         final_df["카드"] = final_df["카드"].apply(normalize_card_name)
-        final_df["카테고리"] = final_df["사용처"].apply(guess_category)  # ✅ 자동 카테고리 분류
+        final_df["카테고리"] = final_df["사용처"].apply(categorize)
+
+        # ✅ 정렬 순서: 카드 → 카테고리 → 날짜
+        final_df = final_df.sort_values(by=["카드", "카테고리", "날짜"]).reset_index(drop=True)
 
         st.subheader("📋 통합 카드 사용 내역")
         st.dataframe(final_df, use_container_width=True)
@@ -78,13 +81,21 @@ if uploaded_files:
             ws = wb.active
             ws.title = '카드내역'
 
-            # 색상 맵
-            color_map = {
+            color_map_card = {
                 "국민카드": "FBE2D5",
                 "현대카드": "DDEBF7",
                 "롯데카드": "CCCCFF",
                 "삼성카드": "E2EFDA",
                 "하나카드": "FFF2CC",
+            }
+
+            color_map_category = {
+                "교통/주유/주차": "CCFFCC",
+                "병원/약국": "FFCC99",
+                "취미/쇼핑": "FFF2CC",
+                "음식점/카페/편의점": "FFCCCC",
+                "고정지출": "C6E0B4",
+                "잡비용": "E7E6E6",
             }
 
             thin_border = Border(
@@ -115,7 +126,9 @@ if uploaded_files:
             # 셀 스타일
             for row in ws.iter_rows(min_row=2, max_row=ws.max_row):
                 card = row[1].value
-                highlight = color_map.get(card, None)
+                category = row[2].value
+                card_color = color_map_card.get(card, None)
+                category_color = color_map_category.get(category, None)
 
                 for idx, cell in enumerate(row):
                     cell.border = thin_border
@@ -129,19 +142,19 @@ if uploaded_files:
                     else:
                         cell.alignment = Alignment(horizontal="left", vertical="center")
 
-                # 카드사별 셀 채우기
-                if highlight:
-                    row[0].fill = PatternFill(start_color=highlight, end_color=highlight, fill_type="solid")  # 날짜
-                    row[1].fill = PatternFill(start_color=highlight, end_color=highlight, fill_type="solid")  # 카드
+                if card_color:
+                    row[0].fill = PatternFill(start_color=card_color, end_color=card_color, fill_type="solid")
+                    row[1].fill = PatternFill(start_color=card_color, end_color=card_color, fill_type="solid")
+                if category_color:
+                    row[2].fill = PatternFill(start_color=category_color, end_color=category_color, fill_type="solid")
 
-            # 페이지 여백 및 보기 설정
+            # 페이지 설정
             ws.page_margins = PageMargins(left=0.5, right=0.5, top=0.75, bottom=0.75)
             ws.sheet_properties = WorksheetProperties(pageSetUpPr=PageSetupProperties(fitToPage=True))
 
             wb.save(output)
             return output.getvalue()
 
-        # ✅ 다운로드 버튼 (함수 밖에 위치해야 함)
         st.download_button(
             label="📥 엑셀로 다운로드",
             data=to_excel(final_df),
