@@ -1,4 +1,4 @@
-# parser.py - 카드사 자동 인식 및 파싱 모듈
+# parse.py - 카드사 자동 인식 및 파싱 모듈
 
 import pandas as pd
 from typing import Optional
