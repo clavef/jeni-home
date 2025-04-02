@@ -156,7 +156,7 @@ def parse_hana(file):
         header_keywords = {"거래일자", "가맹점명", "이용금액"}
         header_row_idx = None
         for i, row in raw.iterrows():
-            cells = [str(c).strip() for c in row if pd.notna(c)]
+            cells = [str(c).replace('\n', '').strip() for c in row if pd.notna(c)]
             if header_keywords.issubset(set(cells)):
                 header_row_idx = i
                 break
@@ -167,12 +167,12 @@ def parse_hana(file):
 
         # ✅ 정식 파싱
         df = xls.parse(sheet_name, skiprows=header_row_idx)
-        df.columns = df.columns.str.strip()
+        df.columns = df.columns.str.replace('\n', '').str.strip()  # 🔥 줄바꿈 제거 포함
 
         # ✅ 필수 컬럼 확인
         required_cols = {"거래일자", "가맹점명", "이용금액"}
         if not required_cols.issubset(df.columns):
-            print("[하나카드] 필수 컬럼 누락")
+            print("[하나카드] 필수 컬럼 누락:", df.columns.tolist())
             return None
 
         df = df[["거래일자", "가맹점명", "이용금액"]].copy()
