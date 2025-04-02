@@ -1,4 +1,4 @@
-# prism.py - 카드사 자동 인식 및 파싱 모듈 (롯데카드 시트 탐색 + 하나카드 보완)
+# prism.py - 롯데카드 파싱 개선 + 하나카드 추가 판별 로직
 
 import pandas as pd
 from typing import Optional, Tuple
@@ -15,7 +15,6 @@ def detect_card_issuer(file) -> Tuple[list, Optional[str]]:
         def fuzzy_match(columns, keywords):
             return all(any(k in col for col in columns) for k in keywords)
 
-        # 카드사별 시그니처 열 조합 (핵심 키워드 기준)
         patterns = {
             "롯데카드": ["이용일자", "이용가맹점", "업종", "이용금액"],
             "KB국민카드": ["이용일", "이용하신곳", "이용카드명", "국내이용금액"],
@@ -38,10 +37,12 @@ def detect_card_issuer(file) -> Tuple[list, Optional[str]]:
                 logs.append(f"🧩 행 {i}: {normed}")
                 for issuer, keywords in patterns.items():
                     if fuzzy_match(normed, keywords):
-                        # 신한/하나카드 키워드가 동일하므로 파일명을 기준으로 우선 판별
-                        if issuer == "신한카드" and "하나" in file.name:
-                            logs.append(f"✅ 인식됨: 하나카드 (행 {i})")
-                            return logs, "하나카드"
+                        # 신한/하나카드 키워드가 동일하므로 정교하게 판단
+                        if issuer == "신한카드" and set(keywords) == set(patterns["하나카드"]):
+                            file_text = "".join([str(cell) for r in df.values for cell in r if pd.notna(cell)]).lower()
+                            if "하나" in file.name.lower() or "하나카드" in file_text:
+                                logs.append(f"✅ 인식됨: 하나카드 (행 {i})")
+                                return logs, "하나카드"
                         logs.append(f"✅ 인식됨: {issuer} (행 {i})")
                         return logs, issuer
 
@@ -76,7 +77,7 @@ def parse_lotte(file):
             for i in range(len(df)):
                 row = df.iloc[i].dropna().astype(str).tolist()
                 if {"이용일자", "이용가맹점", "업종", "이용금액"}.issubset(set(row)):
-                    df = xls.parse(sheet, skiprows=i+1)
+                    df = xls.parse(sheet, skiprows=i)
                     df = df[["이용일자", "이용가맹점", "업종", "이용금액"]]
                     df.columns = ["날짜", "사용처", "카테고리", "금액"]
                     df["카드"] = "롯데카드"
