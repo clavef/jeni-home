@@ -1,4 +1,4 @@
-# cards.py (제니앱 - 카드값 계산기 v16)
+# cards.py (제니앱 - 카드값 계산기 v17)
 
 import streamlit as st
 import pandas as pd
@@ -72,6 +72,7 @@ if uploaded_files:
             from openpyxl.styles import PatternFill, Font, Alignment, Border, Side
             from openpyxl.worksheet.page import PageMargins
             from openpyxl.worksheet.properties import WorksheetProperties, PageSetupProperties
+            from openpyxl.chart import PieChart, Reference
 
             output = BytesIO()
             wb = Workbook()
@@ -93,6 +94,7 @@ if uploaded_files:
                 top=Side(style='thin'), bottom=Side(style='thin')
             )
 
+            # 표 작성
             ws.append(df.columns.tolist())
             for cell in ws[1]:
                 cell.fill = PatternFill(start_color="000000", end_color="000000", fill_type="solid")
@@ -127,7 +129,7 @@ if uploaded_files:
                 if category_color:
                     row[2].fill = PatternFill(start_color=category_color, end_color=category_color, fill_type="solid")
 
-            # ✅ 카테고리별 통계 추가 (G1~H8)
+            # ✅ 카테고리별 통계 (G1~H8)
             ws["G1"] = "카테고리"
             ws["H1"] = "금액"
             ws["G1"].fill = PatternFill(start_color="000000", end_color="000000", fill_type="solid")
@@ -165,7 +167,7 @@ if uploaded_files:
             ws[f"G{row_idx}"].border = thin_border
             ws[f"H{row_idx}"].border = thin_border
 
-            # ✅ 카드사별 통계 추가 (G10~H17)
+            # ✅ 카드사별 통계 (G10~H17)
             ws["G10"] = "카드사"
             ws["H10"] = "금액"
             ws["G10"].fill = PatternFill(start_color="000000", end_color="000000", fill_type="solid")
@@ -199,6 +201,28 @@ if uploaded_files:
             ws[f"H{row_idx}"].font = Font(color="FFFFFF", bold=True)
             ws[f"G{row_idx}"].border = thin_border
             ws[f"H{row_idx}"].border = thin_border
+
+            # ✅ 카테고리별 원형 차트
+            pie1 = PieChart()
+            pie1.title = "카테고리별 사용 비중"
+            labels1 = Reference(ws, min_col=7, min_row=2, max_row=7)
+            data1 = Reference(ws, min_col=8, min_row=1, max_row=7)
+            pie1.add_data(data1, titles_from_data=True)
+            pie1.set_categories(labels1)
+            pie1.height = 7
+            pie1.width = 7
+            ws.add_chart(pie1, "I1")
+
+            # ✅ 카드사별 원형 차트
+            pie2 = PieChart()
+            pie2.title = "카드사별 사용 비중"
+            labels2 = Reference(ws, min_col=7, min_row=11, max_row=16)
+            data2 = Reference(ws, min_col=8, min_row=10, max_row=16)
+            pie2.add_data(data2, titles_from_data=True)
+            pie2.set_categories(labels2)
+            pie2.height = 7
+            pie2.width = 7
+            ws.add_chart(pie2, "I10")
 
             ws.page_margins = PageMargins(left=0.5, right=0.5, top=0.75, bottom=0.75)
             ws.sheet_properties = WorksheetProperties(pageSetUpPr=PageSetupProperties(fitToPage=True))
