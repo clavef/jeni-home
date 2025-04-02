@@ -2,13 +2,19 @@
 
 import streamlit as st
 import pandas as pd
-from parser import detect_card_issuer, parse_card_file
+from pages.parser import detect_card_issuer, parse_card_file
+from shared import show_menu
+
+st.set_page_config(page_title="카드값 계산기 - 제니앱", page_icon="💳", layout="wide")
+show_menu("카드값 계산기")
 
 st.title("💳 카드값 계산기")
 
-uploaded_files = st.file_uploader("카드사별 이용 내역 파일 업로드 (여러 개 가능)",
-                                   type=["xlsx"],
-                                   accept_multiple_files=True)
+uploaded_files = st.file_uploader(
+    "카드사별 이용 내역 파일 업로드 (여러 개 가능)",
+    type=["xlsx"],
+    accept_multiple_files=True
+)
 
 if uploaded_files:
     all_records = []
@@ -35,7 +41,7 @@ if uploaded_files:
         def to_excel(df):
             from io import BytesIO
             output = BytesIO()
-            with pd.ExcelWriter(output, engine='xlsxwriter') as writer:
+            with pd.ExcelWriter(output, engine='openpyxl') as writer:
                 df.to_excel(writer, index=False, sheet_name='카드내역')
             return output.getvalue()
 
