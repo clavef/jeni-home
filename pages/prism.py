@@ -1,4 +1,4 @@
-# prism.py - 카드사 자동 인식 및 파싱 모듈
+# prism.py - 카드사 자동 인식 및 파싱 모듈 (정밀 탐지 모드)
 
 import pandas as pd
 from typing import Optional
@@ -7,10 +7,9 @@ from typing import Optional
 def detect_card_issuer(file) -> Optional[str]:
     try:
         xls = pd.ExcelFile(file)
-        sheet_names = [name.strip() for name in xls.sheet_names]
         file_name = file.name.lower()
 
-        # 파일명 키워드 기반
+        # 파일명 기반 힌트 (예비 판단용)
         if "lotte" in file_name or "veex" in file_name:
             return "롯데카드"
         if "shinhan" in file_name or "신한" in file_name:
@@ -24,38 +23,49 @@ def detect_card_issuer(file) -> Optional[str]:
         if "samsung" in file_name or "삼성" in file_name or "할부" in file_name:
             return "삼성카드"
 
-        # 시트명 기반
-        if "■ 국내이용내역" in sheet_names:
-            return "삼성카드"
+        def norm(col):
+            return str(col).replace("\\n", "").replace("\\r", "").replace(" ", "").strip()
 
-        def normalize(col):
-            return str(col).replace('\n', '').replace('\r', '').replace(' ', '').strip()
+        # 카드사별 열 조합
+        patterns = {
+            "롯데카드": {"이용일자", "이용가맹점", "업종", "이용금액"},
+            "KB국민카드": {"이용일", "이용하신곳", "이용카드명", "국내이용금액(원)"},
+            "신한카드": {"거래일자", "이용가맹점", "거래금액"},
+            "현대카드": {"이용일", "이용가맹점", "이용금액"},
+            "삼성카드": {"승인일자", "가맹점명", "승인금액(원)"},
+            "하나카드": {"항목", "구분", "날짜", "사용처", "금액"},
+        }
 
-        # 시트 전체 순회하며 헤더 후보 탐색 (확장: 100행까지)
+        # 모든 시트에서 행 단위 탐색
         for sheet in xls.sheet_names:
-            df = xls.parse(sheet, header=None, nrows=100)
+            df = xls.parse(sheet, header=None)
             for i in range(len(df)):
                 row = df.iloc[i].dropna().astype(str).tolist()
-                norm = [normalize(c) for c in row]
-                colset = set(norm)
-
-                if {"이용일자", "이용가맹점", "업종", "이용금액"}.issubset(colset):
-                    return "롯데카드"
-                if {"이용일", "이용하신곳", "이용카드명", "국내이용금액(원)"}.issubset(colset):
-                    return "KB국민카드"
-                if {"거래일자", "이용가맹점", "거래금액"}.issubset(colset):
-                    return "신한카드"
-                if {"이용일", "이용가맹점", "이용금액"}.issubset(colset):
-                    return "현대카드"
-                if {"승인일자", "가맹점명", "승인금액(원)"}.issubset(colset):
-                    return "삼성카드"
-                if {"항목", "구분", "이용일자", "이용금액"}.intersection(colset):
-                    return "하나카드"
+                normed = set(norm(c) for c in row)
+                for issuer, keywords in patterns.items():
+                    if keywords <= normed:
+                        return issuer
 
         return None
     except Exception as e:
         print("[ERROR] detect_card_issuer 예외 발생:", e)
         return None
+
+# --- 카드사별 파서 연결 ---
+def parse_card_file(file, issuer: str) -> Optional[pd.DataFrame]:
+    if issuer == "롯데카드":
+        return parse_lotte(file)
+    if issuer == "KB국민카드":
+        return parse_kb(file)
+    if issuer == "신한카드":
+        return parse_shinhan(file)
+    if issuer == "현대카드":
+        return parse_hyundai(file)
+    if issuer == "하나카드":
+        return parse_hana(file)
+    if issuer == "삼성카드":
+        return parse_samsung(file)
+    return None
 
 # --- 카드사별 파서 연결 ---
 def parse_card_file(file, issuer: str) -> Optional[pd.DataFrame]:
