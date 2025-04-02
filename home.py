@@ -18,19 +18,22 @@ st.markdown("생활과 업무를 편리하게 만들어주는 다양한 도구�
 st.markdown("\n---")
 
 # 인스타 언팔체크 섹션
-st.subheader("📱 인스타 언팔체크")
-st.markdown("Instagram에서 다운로드한 JSON 데이터를 분석해, 내가 팔로우하지만 나를 팔로우하지 않는 계정을 찾아줍니다.")
-st.page_link("pages/check.py", label="인스타 언팔체크 실행하기")
+st.markdown("### 📱 인스타 언팔체크")
+st.write("Instagram에서 다운로드한 JSON 데이터를 분석해, 내가 팔로우하지만 나를 팔로우하지 않는 계정을 찾아줍니다.")
+if st.button("▶️ 인스타 언팔체크 실행하기"):
+    st.switch_page("pages/check.py")
 
 # 카드값 계산기 섹션
-st.subheader("💳 카드값 계산기")
-st.markdown("여러 카드사에서 받은 월별 이용내역을 업로드하면 하나의 통합표로 정리해줍니다.")
-st.page_link("pages/cards.py", label="카드값 계산기 실행하기")
+st.markdown("### 💳 카드값 계산기")
+st.write("여러 카드사에서 받은 월별 이용내역을 업로드하면 하나의 통합표로 정리해줍니다.")
+if st.button("▶️ 카드값 계산기 실행하기"):
+    st.switch_page("pages/cards.py")
 
 # 정산 도우미 섹션
-st.subheader("📊 정산 도우미")
-st.markdown("CSV 기반의 엑셀 정산 파일을 업로드하면 항목을 자동 분석하고, 데이터 병합과 분류 작업을 도와줍니다.")
-st.page_link("pages/audit.py", label="정산 도우미 실행하기")
+st.markdown("### 📊 정산 도우미")
+st.write("엑셀 파일을 업로드해 MBL별 금액 누락 및 불일치를 자동으로 비교합니다.")
+if st.button("▶️ 정산 도우미 실행하기"):
+    st.switch_page("pages/audit.py")
 
 st.markdown("\n---")
 st.markdown("ℹ️ 향후 다양한 도구들이 이곳에 추가될 예정입니다.")
