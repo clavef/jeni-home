@@ -1,4 +1,4 @@
-# cards.py (제니앱 - 카드값 계산기 with 인식 로그 출력)
+# cards.py (제니앱 - 카드값 계산기)
 
 import streamlit as st
 import pandas as pd
@@ -25,11 +25,9 @@ if uploaded_files:
     for file in uploaded_files:
         st.markdown(f"---\n### 📂 {file.name}")
 
-        logs, card_issuer = detect_card_issuer(file)
-        with st.expander("🔍 카드사 자동 인식 과정 로그 보기"):
-            for log in logs:
-                st.write(log)
-
+        # 로그 출력 부분 제거
+        card_issuer = detect_card_issuer(file)
+        
         if not card_issuer:
             st.warning(f"❌ 카드사 인식 실패: {file.name}")
             continue
