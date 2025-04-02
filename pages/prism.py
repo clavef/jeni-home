@@ -49,27 +49,6 @@ def parse_card_file(file, issuer: str) -> Optional[pd.DataFrame]:
         return parse_samsung(file)
     return None
 
-# --- 롯데카드 디버깅용 ---
-def parse_lotte_debug(file):
-    import streamlit as st
-    try:
-        xls = pd.ExcelFile(file)
-
-        st.write("📄 시트 목록:", xls.sheet_names)
-
-        sheet_name = xls.sheet_names[0]
-        st.write(f"✅ 선택된 시트: `{sheet_name}`")
-
-        df = xls.parse(sheet_name, skiprows=2)
-        df.columns = df.columns.str.strip()
-        st.write("📊 전체 컬럼 목록:", df.columns.tolist())
-        st.write("🔍 데이터 미리보기", df.head())
-
-        return df
-    except Exception as e:
-        st.error(f"❌ 롯데카드 디버깅 실패: {e}")
-        return None
-
 # --- 롯데카드 ---
 def parse_lotte(file):
     try:
