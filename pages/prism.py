@@ -1,4 +1,4 @@
-# parse.py - 카드사 자동 인식 및 파싱 모듈
+# prism.py - 카드사 자동 인식 및 파싱 모듈
 
 import pandas as pd
 from typing import Optional
@@ -81,8 +81,4 @@ def parse_kb(file):
         xls = pd.ExcelFile(file)
         sheet = xls.sheet_names[0]
         df = xls.parse(sheet, skiprows=6)
-        df = df[["이용일", "이용하신곳", "이용카드명", "국내이용금액\n(원)"]]
-        df.columns = ["날짜", "사용처", "카드", "금액"]
-        df["카테고리"] = ""
-        return df[["날짜", "카드", "카테고리", "사용처", "금액"]]
-    except Exceptio
+        df = df[["이용일", "이용하신곳", "이용카드명", "국내이용금액\n
