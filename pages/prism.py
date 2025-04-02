@@ -144,21 +144,39 @@ def parse_hyundai(file):
 def parse_hana(file):
     try:
         xls = pd.ExcelFile(file)
-        for sheet in xls.sheet_names:
-            if "상세" in sheet:
-                df = xls.parse(sheet, skiprows=9)
-                break
-        else:
-            df = xls.parse(xls.sheet_names[0], skiprows=9)
+        sheet_name = xls.sheet_names[0]
+        raw = xls.parse(sheet_name, header=None)
 
-        df = df.dropna(subset=[df.columns[0]])
-        df = df.iloc[:, :5]
-        df.columns = ["항목", "구분", "날짜", "사용처", "금액"]
+        # 헤더 키워드 기반 탐색
+        header_keywords = {"거래일자", "가맹점명", "이용금액"}
+        header_row_idx = None
+        for i, row in raw.iterrows():
+            cells = [str(c).strip() for c in row if pd.notna(c)]
+            if header_keywords.issubset(set(cells)):
+                header_row_idx = i
+                break
+
+        if header_row_idx is None:
+            print("[하나카드] 헤더를 찾을 수 없습니다.")
+            return None
+
+        # 헤더 행부터 정식 파싱
+        df = xls.parse(sheet_name, skiprows=header_row_idx)
+        df.columns = df.columns.str.strip()
+
+        # 필수 열 확인
+        required_cols = ["거래일자", "가맹점명", "이용금액"]
+        if not set(required_cols).issubset(df.columns):
+            print("[하나카드] 필수 컬럼이 없습니다.")
+            return None
+
+        df = df[["거래일자", "가맹점명", "이용금액"]].copy()
+        df.columns = ["날짜", "사용처", "금액"]
         df["카드"] = "하나카드"
-        df["카테고리"] = df["구분"]
-        df = df[~df["날짜"].str.contains("하나카드|포인트|이벤트", na=False)]
+        df["카테고리"] = ""
 
         return df[["날짜", "카드", "카테고리", "사용처", "금액"]]
+
     except Exception as e:
         print("하나카드 파싱 오류:", e)
         return None
