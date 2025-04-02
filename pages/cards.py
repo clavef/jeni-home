@@ -1,4 +1,4 @@
-# cards.py (제니앱 - 카드값 계산기 v15)
+# cards.py (제니앱 - 카드값 계산기 v16)
 
 import streamlit as st
 import pandas as pd
@@ -127,7 +127,7 @@ if uploaded_files:
                 if category_color:
                     row[2].fill = PatternFill(start_color=category_color, end_color=category_color, fill_type="solid")
 
-            # ✅ 카테고리별 통계 추가 (G1~Hn)
+            # ✅ 카테고리별 통계 추가 (G1~H8)
             ws["G1"] = "카테고리"
             ws["H1"] = "금액"
             ws["G1"].fill = PatternFill(start_color="000000", end_color="000000", fill_type="solid")
@@ -157,6 +157,41 @@ if uploaded_files:
 
             ws[f"G{row_idx}"] = "합계"
             ws[f"H{row_idx}"] = int(total_sum)
+            ws[f"H{row_idx}"].number_format = '#,##0'
+            ws[f"G{row_idx}"].fill = PatternFill(start_color="000000", end_color="000000", fill_type="solid")
+            ws[f"H{row_idx}"].fill = PatternFill(start_color="000000", end_color="000000", fill_type="solid")
+            ws[f"G{row_idx}"].font = Font(color="FFFFFF", bold=True)
+            ws[f"H{row_idx}"].font = Font(color="FFFFFF", bold=True)
+            ws[f"G{row_idx}"].border = thin_border
+            ws[f"H{row_idx}"].border = thin_border
+
+            # ✅ 카드사별 통계 추가 (G10~H17)
+            ws["G10"] = "카드사"
+            ws["H10"] = "금액"
+            ws["G10"].fill = PatternFill(start_color="000000", end_color="000000", fill_type="solid")
+            ws["G10"].font = Font(color="FFFFFF", bold=True)
+            ws["H10"].fill = PatternFill(start_color="000000", end_color="000000", fill_type="solid")
+            ws["H10"].font = Font(color="FFFFFF", bold=True)
+            ws["G10"].alignment = Alignment(horizontal="center", vertical="center")
+            ws["H10"].alignment = Alignment(horizontal="center", vertical="center")
+
+            card_stats = df.groupby("카드")["금액"].sum().reindex(color_map_card.keys()).dropna()
+            card_total = df["금액"].sum()
+
+            row_idx = 11
+            for card_name, amount in card_stats.items():
+                ws[f"G{row_idx}"] = card_name
+                ws[f"H{row_idx}"] = int(amount)
+                ws[f"H{row_idx}"].number_format = '#,##0'
+                card_color = color_map_card.get(card_name)
+                if card_color:
+                    ws[f"G{row_idx}"].fill = PatternFill(start_color=card_color, end_color=card_color, fill_type="solid")
+                ws[f"G{row_idx}"].border = thin_border
+                ws[f"H{row_idx}"].border = thin_border
+                row_idx += 1
+
+            ws[f"G{row_idx}"] = "합계"
+            ws[f"H{row_idx}"] = int(card_total)
             ws[f"H{row_idx}"].number_format = '#,##0'
             ws[f"G{row_idx}"].fill = PatternFill(start_color="000000", end_color="000000", fill_type="solid")
             ws[f"H{row_idx}"].fill = PatternFill(start_color="000000", end_color="000000", fill_type="solid")
