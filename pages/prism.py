@@ -142,12 +142,17 @@ def parse_hyundai(file):
 
 # --- 하나카드 ---
 def parse_hana(file):
+    import re
+
+    def is_date_like(val):
+        return isinstance(val, str) and re.match(r"\d{4}\.\d{2}\.\d{2}", val)
+
     try:
         xls = pd.ExcelFile(file)
         sheet_name = xls.sheet_names[0]
         raw = xls.parse(sheet_name, header=None)
 
-        # 헤더 키워드 기반 탐색
+        # ✅ 헤더 탐색
         header_keywords = {"거래일자", "가맹점명", "이용금액"}
         header_row_idx = None
         for i, row in raw.iterrows():
@@ -160,20 +165,23 @@ def parse_hana(file):
             print("[하나카드] 헤더를 찾을 수 없습니다.")
             return None
 
-        # 헤더 행부터 정식 파싱
+        # ✅ 정식 파싱
         df = xls.parse(sheet_name, skiprows=header_row_idx)
         df.columns = df.columns.str.strip()
 
-        # 필수 열 확인
-        required_cols = ["거래일자", "가맹점명", "이용금액"]
-        if not set(required_cols).issubset(df.columns):
-            print("[하나카드] 필수 컬럼이 없습니다.")
+        # ✅ 필수 컬럼 확인
+        required_cols = {"거래일자", "가맹점명", "이용금액"}
+        if not required_cols.issubset(df.columns):
+            print("[하나카드] 필수 컬럼 누락")
             return None
 
         df = df[["거래일자", "가맹점명", "이용금액"]].copy()
         df.columns = ["날짜", "사용처", "금액"]
         df["카드"] = "하나카드"
         df["카테고리"] = ""
+
+        # ✅ 유효한 날짜만 남기기
+        df = df[df["날짜"].apply(is_date_like)]
 
         return df[["날짜", "카드", "카테고리", "사용처", "금액"]]
 
