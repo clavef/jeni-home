@@ -1,56 +1,38 @@
-# prism.py - 롯데카드 파싱 개선 + 하나카드 추가 판별 로직
-
 import pandas as pd
-from typing import Optional, Tuple
+from typing import Optional
 
 # --- 카드사 자동 인식 ---
-def detect_card_issuer(file) -> Tuple[list, Optional[str]]:
-    logs = []
+def detect_card_issuer(file) -> Optional[str]:
     try:
         xls = pd.ExcelFile(file)
+        file_name = file.name.lower()
 
         def normalize(text):
             return str(text).replace('\n', '').replace('\r', '').replace(' ', '').strip()
 
-        def fuzzy_match(columns, keywords):
-            return all(any(k in col for col in columns) for k in keywords)
-
+        # 카드사별 시그니처 열 조합
         patterns = {
-            "롯데카드": ["이용일자", "이용가맹점", "업종", "이용금액"],
-            "KB국민카드": ["이용일", "이용하신곳", "이용카드명", "국내이용금액"],
-            "신한카드": ["거래일자", "이용가맹점", "거래금액"],
-            "현대카드": ["이용일", "이용가맹점", "이용금액"],
-            "삼성카드": ["승인일자", "가맹점명", "승인금액"],
-            "하나카드": ["거래일자", "가맹점명", "이용금액"],
+            "롯데카드": {"이용일자", "이용가맹점", "업종", "이용금액"},
+            "KB국민카드": {"이용일", "이용하신곳", "이용카드명", "국내이용금액(원)"},
+            "신한카드": {"거래일자", "이용가맹점", "거래금액"},
+            "현대카드": {"이용일", "이용가맹점", "이용금액"},
+            "삼성카드": {"승인일자", "가맹점명", "승인금액(원)"},
+            "하나카드": {"항목", "구분", "날짜", "사용처", "금액"},
         }
-
-        logs.append(f"📁 파일명: {file.name}")
 
         for sheet in xls.sheet_names:
             df = xls.parse(sheet, header=None)
-            logs.append(f"📄 시트: {sheet}")
             for i in range(len(df)):
                 row = df.iloc[i]
-                normed = [normalize(cell) for cell in row if pd.notna(cell)]
-                if not normed:
-                    continue
-                logs.append(f"🧩 행 {i}: {normed}")
+                normed = set(normalize(cell) for cell in row if pd.notna(cell))
                 for issuer, keywords in patterns.items():
-                    if fuzzy_match(normed, keywords):
-                        # 신한/하나카드 키워드가 동일하므로 정교하게 판단
-                        if issuer == "신한카드" and set(keywords) == set(patterns["하나카드"]):
-                            file_text = "".join([str(cell) for r in df.values for cell in r if pd.notna(cell)]).lower()
-                            if "하나" in file.name.lower() or "하나카드" in file_text:
-                                logs.append(f"✅ 인식됨: 하나카드 (행 {i})")
-                                return logs, "하나카드"
-                        logs.append(f"✅ 인식됨: {issuer} (행 {i})")
-                        return logs, issuer
+                    if keywords <= normed:
+                        return issuer
 
-        logs.append("❌ 어떤 카드사도 인식되지 않음")
-        return logs, None
+        return None
     except Exception as e:
-        logs.append(f"[ERROR] detect_card_issuer 예외 발생: {e}")
-        return logs, None
+        print("[ERROR] detect_card_issuer 예외 발생:", e)
+        return None
 
 # --- 카드사별 파서 연결 ---
 def parse_card_file(file, issuer: str) -> Optional[pd.DataFrame]:
@@ -72,17 +54,11 @@ def parse_card_file(file, issuer: str) -> Optional[pd.DataFrame]:
 def parse_lotte(file):
     try:
         xls = pd.ExcelFile(file)
-        for sheet in xls.sheet_names:
-            df = xls.parse(sheet, header=None)
-            for i in range(len(df)):
-                row = df.iloc[i].dropna().astype(str).tolist()
-                if {"이용일자", "이용가맹점", "업종", "이용금액"}.issubset(set(row)):
-                    df = xls.parse(sheet, skiprows=i)
-                    df = df[["이용일자", "이용가맹점", "업종", "이용금액"]]
-                    df.columns = ["날짜", "사용처", "카테고리", "금액"]
-                    df["카드"] = "롯데카드"
-                    return df[["날짜", "카드", "카테고리", "사용처", "금액"]]
-        return None
+        df = xls.parse("■ 국내이용내역", skiprows=6)
+        df = df[["이용일자", "이용가맹점", "업종", "이용금액"]]
+        df.columns = ["날짜", "사용처", "카테고리", "금액"]
+        df["카드"] = "롯데카드"
+        return df[["날짜", "카드", "카테고리", "사용처", "금액"]]
     except Exception as e:
         print("롯데카드 파싱 오류:", e)
         return None
@@ -147,6 +123,10 @@ def parse_hana(file):
         df.columns = ["항목", "구분", "날짜", "사용처", "금액"]
         df["카드"] = "하나카드"
         df["카테고리"] = df["구분"]
+        
+        # 불필요한 행 제거
+        df = df[~df["날짜"].str.contains("하나카드|포인트|이벤트", na=False)]
+        
         return df[["날짜", "카드", "카테고리", "사용처", "금액"]]
     except Exception as e:
         print("하나카드 파싱 오류:", e)
