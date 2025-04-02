@@ -2,7 +2,7 @@
 
 import streamlit as st
 import pandas as pd
-from parsers import detect_card_issuer, parse_card_file
+from prism import detect_card_issuer, parse_card_file  # prism으로 수정
 
 st.title("💳 카드값 계산기")
 
