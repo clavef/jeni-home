@@ -60,9 +60,6 @@ if uploaded_files and all_records:
     # ✅ 카드명 정리
     final_df["카드"] = final_df["카드"].apply(normalize_card_name)
 
-    # ✅ 금액 쉼표 표시
-    final_df["금액"] = final_df["금액"].apply(lambda x: f"{int(x):,}")
-
     st.subheader("📋 통합 카드 사용 내역")
     st.dataframe(final_df, use_container_width=True)
 
@@ -72,16 +69,32 @@ if uploaded_files and all_records:
         from io import BytesIO
         from openpyxl import Workbook
         from openpyxl.utils.dataframe import dataframe_to_rows
-        from openpyxl.styles import Alignment
+        from openpyxl.styles import Alignment, numbers
 
         output = BytesIO()
         wb = Workbook()
         ws = wb.active
         ws.title = '카드내역'
 
-        # 데이터프레임 쓰기
-        for r in dataframe_to_rows(df, index=False, header=True):
-            ws.append(r)
+        for r_idx, row in enumerate(dataframe_to_rows(df, index=False, header=True), 1):
+            ws.append(row)
+
+            if r_idx == 1:
+                continue  # 헤더 건너뜀
+
+            # 열별 정렬
+            ws.cell(row=r_idx, column=1).alignment = Alignment(horizontal="center")  # 날짜
+            ws.cell(row=r_idx, column=2).alignment = Alignment(horizontal="center")  # 카드
+            ws.cell(row=r_idx, column=3).alignment = Alignment(horizontal="left")    # 카테고리
+            ws.cell(row=r_idx, column=4).alignment = Alignment(horizontal="left")    # 사용처
+
+            # ✅ 금액: 숫자 서식 "#,##0"
+            cell = ws.cell(row=r_idx, column=5)
+            try:
+                cell.value = float(str(cell.value).replace(",", ""))
+                cell.number_format = '#,##0'
+            except:
+                pass
 
         # 열 너비 조정
         col_widths = {
@@ -93,11 +106,6 @@ if uploaded_files and all_records:
         }
         for col, width in col_widths.items():
             ws.column_dimensions[col].width = width
-
-        # 정렬
-        for row in ws.iter_rows(min_row=2):
-            for cell in row:
-                cell.alignment = Alignment(horizontal='left', vertical='center')
 
         wb.save(output)
         return output.getvalue()
