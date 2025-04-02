@@ -1,14 +1,13 @@
-# prism.py - 카드사 자동 인식 및 파싱 모듈 (디버깅 로그 추가)
+# prism.py - 카드사 자동 인식 및 파싱 모듈 (로그 반환 방식)
 
 import pandas as pd
-import streamlit as st
-from typing import Optional
+from typing import Optional, Tuple
 
 # --- 카드사 자동 인식 ---
-def detect_card_issuer(file) -> Optional[str]:
+def detect_card_issuer(file) -> Tuple[list, Optional[str]]:
+    logs = []
     try:
         xls = pd.ExcelFile(file)
-        file_name = file.name.lower()
 
         def normalize(text):
             return str(text).replace('\n', '').replace('\r', '').replace(' ', '').strip()
@@ -26,28 +25,27 @@ def detect_card_issuer(file) -> Optional[str]:
             "하나카드": ["항목", "구분", "날짜", "사용처", "금액"],
         }
 
-        st.write(f"📁 파일명: {file.name}")
+        logs.append(f"📁 파일명: {file.name}")
 
         for sheet in xls.sheet_names:
             df = xls.parse(sheet, header=None)
-            st.write(f"📄 시트: {sheet}")
+            logs.append(f"📄 시트: {sheet}")
             for i in range(len(df)):
                 row = df.iloc[i]
                 normed = [normalize(cell) for cell in row if pd.notna(cell)]
                 if not normed:
                     continue
-                st.write(f"🧩 행 {i}: {normed}")
+                logs.append(f"🧩 행 {i}: {normed}")
                 for issuer, keywords in patterns.items():
                     if fuzzy_match(normed, keywords):
-                        st.success(f"✅ 인식됨: {issuer} (행 {i})")
-                        return issuer
+                        logs.append(f"✅ 인식됨: {issuer} (행 {i})")
+                        return logs, issuer
 
-        st.error("❌ 어떤 카드사도 인식되지 않음")
-        return None
-
+        logs.append("❌ 어떤 카드사도 인식되지 않음")
+        return logs, None
     except Exception as e:
-        st.error(f"[ERROR] detect_card_issuer 예외 발생: {e}")
-        return None
+        logs.append(f"[ERROR] detect_card_issuer 예외 발생: {e}")
+        return logs, None
 
 # --- 카드사별 파서 연결 ---
 def parse_card_file(file, issuer: str) -> Optional[pd.DataFrame]:
@@ -66,6 +64,7 @@ def parse_card_file(file, issuer: str) -> Optional[pd.DataFrame]:
     return None
 
 # --- 이하 카드사별 파싱 함수 동일 ---
+
 
 # --- 롯데카드 ---
 def parse_lotte(file):
