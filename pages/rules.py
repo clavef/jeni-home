@@ -1,12 +1,11 @@
-# pages/prism.py
+# pages/rules.py
 
 import streamlit as st
-
-st.set_page_config(page_title="내부 함수 (Prism)", layout="centered")
-
-st.warning("⚠️ 이 페이지는 내부 기능을 위한 페이지입니다. 직접 사용하지 마세요.")
-
 import re
+
+# ✅ 경고 메시지: 방문자가 직접 이 페이지를 열었을 때 안내
+st.set_page_config(page_title="내부 함수 (Rules)", layout="centered")
+st.warning("⚠️ 이 페이지는 내부 기능을 위한 페이지입니다. 직접 사용할 필요는 없습니다.")
 
 # ✅ 간단한 규칙 기반 자동 분류 함수 (v2)
 def categorize(merchant: str) -> str:
