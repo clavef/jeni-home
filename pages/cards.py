@@ -42,7 +42,7 @@ if uploaded_files:
         st.markdown(f"---\n### 📂 {file.name}")
 
         card_issuer = detect_card_issuer(file)
-
+       
         if not card_issuer:
             st.warning(f"❌ 카드사 인식 실패: {file.name}")
             continue
@@ -52,69 +52,88 @@ if uploaded_files:
             all_records.append(df)
             st.success(f"✅ {card_issuer} 내역 처리 완료: {len(df)}건")
         else:
-            st.warning(f"⚠️ {card_issuer} 내역 파시마 실패")
+            st.warning(f"⚠️ {card_issuer} 내역 파싱 실패")
 
 if uploaded_files and all_records:
     final_df = pd.concat(all_records, ignore_index=True)
 
     # ✅ 카드명 정리
-    final_df["\uce74\ub4dc"] = final_df["\uce74\ub4dc"].apply(normalize_card_name)
+    final_df["카드"] = final_df["카드"].apply(normalize_card_name)
 
     st.subheader("📋 통합 카드 사용 내역")
     st.dataframe(final_df, use_container_width=True)
 
-    # ✅ 엘셀 다운로드 함수
+    # ✅ 엑셀 다운로드 함수
     @st.cache_data
     def to_excel(df):
         from io import BytesIO
         from openpyxl import Workbook
         from openpyxl.utils.dataframe import dataframe_to_rows
-        from openpyxl.styles import Alignment, NamedStyle, numbers
+        from openpyxl.styles import Alignment, Font, PatternFill, Border, Side, numbers
 
         output = BytesIO()
         wb = Workbook()
         ws = wb.active
         ws.title = '카드내역'
 
-        # 데이터프리마 쓰기
+        # 색상 맵핑
+        color_map = {
+            "국민카드": "FBE2D5",
+            "현대카드": "DDEBF7",
+            "롯데카드": "CCCCFF",
+            "삼성카드": "E2EFDA",
+        }
+
+        # 스타일 정의
+        header_fill = PatternFill("solid", fgColor="000000")
+        header_font = Font(color="FFFFFF", bold=True)
+        border = Border(
+            left=Side(style='thin'),
+            right=Side(style='thin'),
+            top=Side(style='thin'),
+            bottom=Side(style='thin')
+        )
+
+        # 데이터프레임 쓰기
         for r in dataframe_to_rows(df, index=False, header=True):
             ws.append(r)
 
-        # 여름 너비 조정
+        # 열 너비 조정
         col_widths = {
             'A': 11,  # 날짜
             'B': 11,  # 카드
             'C': 20,  # 카테고리
-            'D': 40,  # 사용체
+            'D': 40,  # 사용처
             'E': 11,  # 금액
         }
         for col, width in col_widths.items():
             ws.column_dimensions[col].width = width
 
-        # 가능한 포맷 바꾸기 (25.03.29)
-        for row in ws.iter_rows(min_row=2, max_col=1):
-            for cell in row:
-                try:
-                    cell.number_format = 'yy.mm.dd'
-                except:
-                    pass
-
-        # 금액: 숫자지만 포맷은 #,##0 적용
-        for row in ws.iter_rows(min_row=2, min_col=5, max_col=5):
-            for cell in row:
-                cell.number_format = '#,##0'
-                cell.alignment = Alignment(horizontal='right', vertical='center')
-
-        # 기타 여름: 왼쪽 정렬
-        for row in ws.iter_rows(min_row=2, max_col=4):
+        for i, row in enumerate(ws.iter_rows(min_row=1, max_row=ws.max_row), start=1):
             for cell in row:
                 cell.alignment = Alignment(horizontal='left', vertical='center')
+                cell.border = border
+                if i == 1:
+                    cell.fill = header_fill
+                    cell.font = header_font
+
+        # 금액 열 숫자 서식 적용 (E열)
+        for cell in ws['E'][1:]:
+            cell.number_format = '#,##0'
+
+        # 카드사별 색상 채움 (A, B열)
+        for row in ws.iter_rows(min_row=2, max_row=ws.max_row):
+            card_name = row[1].value  # B열 (index 1)
+            color = color_map.get(card_name)
+            if color:
+                row[0].fill = PatternFill("solid", fgColor=color)  # A열
+                row[1].fill = PatternFill("solid", fgColor=color)  # B열
 
         wb.save(output)
         return output.getvalue()
 
     st.download_button(
-        label="📅 엘셀로 다운로드",
+        label="📥 엑셀로 다운로드",
         data=to_excel(final_df),
         file_name="카드값_통합내역.xlsx",
         mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
