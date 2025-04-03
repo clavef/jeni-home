@@ -1,6 +1,6 @@
 # home.py
 import streamlit as st
-st.set_page_config(page_title="제니앱", page_icon="🌟", layout="wide")
+st.set_page_config(page_title="제니앱", page_icon="🏠", layout="wide")
 
 from shared import show_menu
 
