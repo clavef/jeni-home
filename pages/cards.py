@@ -1,4 +1,4 @@
-# cards.py (v21) - 제니앱 카드값 계산기
+# cards.py (v22) - 제니앱 카드값 계산기
 
 import streamlit as st
 import pandas as pd
@@ -14,14 +14,14 @@ st.title("💳 카드값 계산기")
 st.markdown("""
 ### 📝 사용 방법
 
-1. **카드사 자동 인식**  
-   카드사 홈페이지에서 다운로드한 원본 엑셀 파일 그대로 업로드하세요.  
+1. **카드사 자동 인식** 
+   카드사 홈페이지에서 다운로드한 원본 엑셀 파일 그대로 업로드하세요. 
    시트 구조를 기반으로 자동 인식됩니다.
 
-2. **여러 카드사 파일 동시 업로드 가능**  
+2. **여러 카드사 파일 동시 업로드 가능** 
    여러 개의 엑셀 파일을 한꺼번에 업로드해도 자동 통합됩니다.
 
-3. **.xls 구버전은 .xlsx로 변환 필요**  
+3. **.xls 구버전은 .xlsx로 변환 필요** 
    구버전 파일은 Excel에서 '다른 이름으로 저장' 후 사용하세요.
 """)
 
@@ -181,11 +181,17 @@ def parse_hana(file):
         df.columns = df.columns.astype(str).str.replace('\n', '').str.replace(' ', '').str.strip()
         if not {"거래일자", "가맹점명", "이용금액"}.issubset(df.columns):
             return None
+
         df = df[["거래일자", "가맹점명", "이용금액"]]
         df.columns = ["날짜", "사용처", "금액"]
         df["카드"] = "하나카드"
         df["카테고리"] = ""
-        df = df[df["날짜"].astype(str).str.match(r"\\d{4}\\.\\d{2}\\.\\d{2}")]
+
+        # 날짜를 to_datetime으로 정리 (엑셀 날짜 형식 포함)
+        df["날짜"] = pd.to_datetime(df["날짜"], errors="coerce")
+        df = df[df["날짜"].notna()]  # 유효한 날짜만 남김
+        df["날짜"] = df["날짜"].dt.strftime("%Y.%m.%d")
+
         return df[["날짜", "카드", "카테고리", "사용처", "금액"]]
     except:
         return None
