@@ -1,5 +1,3 @@
-cards v21
-
 # cards.py (v21) - 제니앱 카드값 계산기
 
 import streamlit as st
