@@ -1,4 +1,4 @@
-# shared.py (v6)
+# shared.py (v7)
 import streamlit as st
 
 def show_menu(active_page: str):
@@ -15,14 +15,14 @@ def show_menu(active_page: str):
         </style>
     """, unsafe_allow_html=True)
 
-    # 홈 경로 확인: Home으로 고정 (페이지 이름 기준으로)
-    # streamlit에선 기본 페이지가 보통 "/Home"으로 연결됨
+    # 홈 링크를 실제로 동작하는 page_link로 처리
+    st.sidebar.page_link("home.py", label="", icon=None)
+
+    # 그 아래에 로고 이미지를 덮어 씌우듯 표시
     st.sidebar.markdown(
         """
-        <div class="sidebar-header">
-            <a href="/" target="_self">
-                <img src="https://raw.githubusercontent.com/clavef/jeniapp/main/logo.png" alt="Jeniapp Logo">
-            </a>
+        <div class="sidebar-header" style="margin-top: -2.5rem;">
+            <img src="https://raw.githubusercontent.com/clavef/jeniapp/main/logo.png" alt="Jeniapp Logo">
         </div>
         """,
         unsafe_allow_html=True
