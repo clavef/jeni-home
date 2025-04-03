@@ -11,22 +11,21 @@ show_menu("카드값 계산기")
 
 st.title("💳 카드값 계산기")
 
-# ✅ 사용법 안내
-st.markdown(\"\"\"
+st.markdown("""
 ### 📝 사용 방법
 
-1. **카드사 자동 인식** 
-   카드사 홈페이지에서 다운로드한 원본 엑셀 파일 그대로 업로드하세요. 
+1. **카드사 자동 인식**  
+   카드사 홈페이지에서 다운로드한 원본 엑셀 파일 그대로 업로드하세요.  
    시트 구조를 기반으로 자동 인식됩니다.
 
-2. **여러 카드사 파일 동시 업로드 가능** 
+2. **여러 카드사 파일 동시 업로드 가능**  
    여러 개의 엑셀 파일을 한꺼번에 업로드해도 자동 통합됩니다.
 
-3. **.xls 구버전은 .xlsx로 변환 필요** 
+3. **.xls 구버전은 .xlsx로 변환 필요**  
    구버전 파일은 Excel에서 '다른 이름으로 저장' 후 사용하세요.
-\"\"\")
+""")
 
-# ✅ 카드사 이름 정규화
+# ✅ 카드사명 정규화
 def normalize_card_name(card):
     for key in [("국민", "국민카드"), ("신한", "신한카드"), ("현대", "현대카드"),
                 ("하나", "하나카드"), ("로테", "로테카드"), ("삼성", "삼성카드")]:
@@ -34,7 +33,7 @@ def normalize_card_name(card):
             return key[1]
     return card
 
-# ✅ 가맹점 기반 카테고리 분류
+# ✅ 자동 카테고리 분류
 def categorize(merchant: str) -> str:
     merchant = str(merchant)
     high_priority_rules = [
@@ -87,173 +86,118 @@ def detect_card_issuer(file) -> Optional[str]:
         print("[ERROR] detect_card_issuer 예외 발생:", e)
         return None
 
-# --- 카드사별 파서 연결 ---
+# ✅ 카드사별 파서 연결
 def parse_card_file(file, issuer: str) -> Optional[pd.DataFrame]:
-    if issuer == "롯데카드":
-        return parse_lotte(file)
-    if issuer == "KB국민카드":
-        return parse_kb(file)
-    if issuer == "신한카드":
-        return parse_shinhan(file)
-    if issuer == "현대카드":
-        return parse_hyundai(file)
-    if issuer == "하나카드":
-        return parse_hana(file)
-    if issuer == "삼성카드":
-        return parse_samsung(file)
-    return None
+    parsers = {
+        "롯데카드": parse_lotte,
+        "KB국민카드": parse_kb,
+        "신한카드": parse_shinhan,
+        "현대카드": parse_hyundai,
+        "하나카드": parse_hana,
+        "삼성카드": parse_samsung
+    }
+    return parsers.get(issuer, lambda f: None)(file)
 
-# --- 롯데카드 ---
+# ✅ 개별 카드사 파서들
 def parse_lotte(file):
     try:
         xls = pd.ExcelFile(file)
-        sheet_name = xls.sheet_names[0]
-        raw = xls.parse(sheet_name, header=None)
+        sheet = xls.sheet_names[0]
+        raw = xls.parse(sheet, header=None)
         header_keywords = {"이용일자", "이용가맹점", "업종", "이용금액"}
 
-        header_row_idx = None
         for i, row in raw.iterrows():
             cells = [str(c).strip() for c in row if pd.notna(c)]
             if header_keywords.issubset(set(cells)):
-                header_row_idx = i
+                df = xls.parse(sheet, skiprows=i)
                 break
-
-        if header_row_idx is None:
+        else:
             return None
 
-        df = xls.parse(sheet_name, skiprows=header_row_idx)
         df.columns = df.columns.str.strip()
         if "취소여부" in df.columns:
             df = df[df["취소여부"].astype(str).str.upper() != "Y"]
 
-        required_cols = ["이용일자", "이용가맹점", "업종", "이용금액"]
-        if not set(required_cols).issubset(df.columns):
-            return None
-
-        df = df[required_cols].copy()
+        df = df[["이용일자", "이용가맹점", "업종", "이용금액"]].copy()
         df.columns = ["날짜", "사용처", "카테고리", "금액"]
         df["카드"] = "롯데카드"
         return df[["날짜", "카드", "카테고리", "사용처", "금액"]]
-    except Exception as e:
-        print("롯데카드 파싱 오류:", e)
+    except:
         return None
 
-# --- KB국민카드 ---
 def parse_kb(file):
     try:
         xls = pd.ExcelFile(file)
-        sheet = xls.sheet_names[0]
-        df = xls.parse(sheet, skiprows=6)
+        df = xls.parse(xls.sheet_names[0], skiprows=6)
         if "상태" in df.columns:
             df = df[~df["상태"].astype(str).str.contains("승인취소|취소전표", na=False)]
 
         df = df[["이용일", "이용하신곳", "이용카드명", "국내이용금액\n(원)", "결제방법"]]
         df.columns = ["날짜", "사용처", "카드", "금액", "결제방법"]
-
         df["날짜"] = pd.to_datetime(df["날짜"], errors="coerce").dt.strftime("%Y.%m.%d")
         df["금액"] = df["금액"].astype(str).str.replace(",", "").astype(int)
 
-        def adjust_installment(row):
+        def adjust(row):
             method = str(row["결제방법"])
             if method != "일시불" and any(char.isdigit() for char in method):
-                months = int(''.join(filter(str.isdigit, method)))
-                return round(row["금액"] / months)
+                return round(row["금액"] / int(''.join(filter(str.isdigit, method))))
             return row["금액"]
+        df["금액"] = df.apply(adjust, axis=1)
 
-        df["금액"] = df.apply(adjust_installment, axis=1)
         df["카테고리"] = ""
         return df[["날짜", "카드", "카테고리", "사용처", "금액"]]
-    except Exception as e:
-        print("KB국민카드 파싱 오류:", e)
+    except:
         return None
 
-# --- 신한카드 ---
 def parse_shinhan(file):
     try:
-        xls = pd.ExcelFile(file)
-        sheet = xls.sheet_names[0]
-        df = xls.parse(sheet, skiprows=2)
+        df = pd.ExcelFile(file).parse(0, skiprows=2)
         df = df[["거래일자", "이용가맹점", "결제 금액"]]
         df.columns = ["날짜", "사용처", "금액"]
         df["금액"] = pd.to_numeric(df["금액"], errors="coerce")
         df["카드"] = "신한카드"
         df["카테고리"] = ""
         return df[["날짜", "카드", "카테고리", "사용처", "금액"]]
-    except Exception as e:
-        print("신한카드 파싱 오류:", e)
+    except:
         return None
 
-# --- 현대카드 ---
 def parse_hyundai(file):
     try:
-        xls = pd.ExcelFile(file)
-        sheet = xls.sheet_names[0]
-        df = xls.parse(sheet, skiprows=2)
+        df = pd.ExcelFile(file).parse(0, skiprows=2)
         df = df[~df["이용가맹점"].astype(str).str.contains("합계|소계|총|이월", na=False)]
-
-        def convert_excel_date(val):
-            try:
-                val = float(val)
-                return pd.to_datetime("1899-12-30") + pd.to_timedelta(val, unit="D")
-            except:
-                return pd.to_datetime(val, errors="coerce")
-
-        df["이용일"] = df["이용일"].apply(convert_excel_date)
+        df["이용일"] = pd.to_datetime(df["이용일"], errors="coerce")
         df["이용일"] = df["이용일"].dt.strftime("%Y.%m.%d")
         df = df[["이용일", "이용가맹점", "이용금액"]]
         df.columns = ["날짜", "사용처", "금액"]
         df["카드"] = "현대카드"
         df["카테고리"] = ""
         return df[["날짜", "카드", "카테고리", "사용처", "금액"]]
-    except Exception as e:
-        print("현대카드 파싱 오류:", e)
+    except:
         return None
 
-# --- 하나카드 ---
 def parse_hana(file):
     try:
-        xls = pd.ExcelFile(file)
-        sheet_name = xls.sheet_names[0]
-        df = xls.parse(sheet_name, skiprows=28)
+        df = pd.ExcelFile(file).parse(0, skiprows=28)
         df.columns = df.columns.astype(str).str.replace('\n', '').str.replace(' ', '').str.strip()
         if not {"거래일자", "가맹점명", "이용금액"}.issubset(df.columns):
             return None
-
         df = df[["거래일자", "가맹점명", "이용금액"]]
         df.columns = ["날짜", "사용처", "금액"]
         df["카드"] = "하나카드"
         df["카테고리"] = ""
-
-        def is_date_like(val):
-            try:
-                if pd.isna(val): return False
-                val_str = str(val).strip()
-                return bool(re.match(r"\d{4}\.\d{2}\.\d{2}", val_str))
-            except: return False
-
-        df = df[df["날짜"].apply(is_date_like)]
+        df = df[df["날짜"].astype(str).str.match(r"\\d{4}\\.\\d{2}\\.\\d{2}")]
         return df[["날짜", "카드", "카테고리", "사용처", "금액"]]
-    except Exception:
+    except:
         return None
 
-# --- 삼성카드 ---
 def parse_samsung(file):
     try:
-        xls = pd.ExcelFile(file)
-        df = xls.parse(xls.sheet_names[1])  # 두 번째 시트
+        df = pd.ExcelFile(file).parse(1)
         df = df[["승인일자", "승인시각", "가맹점명", "승인금액(원)"]].dropna()
         df["승인금액(원)"] = df["승인금액(원)"].astype(str).str.replace(",", "").astype(int)
-
-        df["매칭키"] = (
-            df["승인일자"].astype(str) + "_" +
-            df["승인시각"].astype(str) + "_" +
-            df["승인금액(원)"].abs().astype(str)
-        )
-
+        df["매칭키"] = df["승인일자"].astype(str) + "_" + df["승인시각"].astype(str) + "_" + df["승인금액(원)"].abs().astype(str)
         dupes = df[df.duplicated("매칭키", keep=False)]
-        to_remove = dupes.groupby("매칭키").filter(
-            lambda g: (g["승인금액(원)"] > 0).any() and (g["승인금액(원)"] < 0).any()
-        )
+        to_remove = dupes.groupby("매칭키").filter(lambda g: (g["승인금액(원)"] > 0).any() and (g["승인금액(원)"] < 0).any())
         df = df[~df.index.isin(to_remove.index)]
 
         df["날짜"] = pd.to_datetime(df["승인일자"]).dt.strftime("%Y.%m.%d")
@@ -262,8 +206,7 @@ def parse_samsung(file):
         df["금액"] = df["승인금액(원)"]
         df["카테고리"] = ""
         return df[["날짜", "카드", "카테고리", "사용처", "금액"]]
-    except Exception as e:
-        print("삼성카드 파싱 오류:", e)
+    except:
         return None
 
 # ✅ 파일 업로드
@@ -273,7 +216,7 @@ uploaded_files = st.file_uploader(
     accept_multiple_files=True
 )
 
-# ✅ 업로드된 파일 처리
+# ✅ 처리 시작
 if uploaded_files:
     all_records = []
     for file in uploaded_files:
@@ -299,7 +242,6 @@ if uploaded_files:
         st.subheader("📋 통합 카드 사용 내역")
         st.dataframe(final_df, use_container_width=True)
 
-        # ✅ 엑셀 변환 함수
         @st.cache_data
         def to_excel(df):
             from io import BytesIO
@@ -317,12 +259,8 @@ if uploaded_files:
             ws.title = '카드내역'
 
             color_map_card = {
-                "국민카드": "FBE2D5",
-                "현대카드": "DDEBF7",
-                "롯데카드": "CCCCFF",
-                "삼성카드": "E2EFDA",
-                "하나카드": "FFF2CC",
-                "신한카드": "DDD9C4",
+                "국민카드": "FBE2D5", "현대카드": "DDEBF7", "롯데카드": "CCCCFF",
+                "삼성카드": "E2EFDA", "하나카드": "FFF2CC", "신한카드": "DDD9C4",
             }
 
             color_map_category = {
@@ -336,31 +274,29 @@ if uploaded_files:
                 top=Side(style='thin'), bottom=Side(style='thin')
             )
 
-            # ✅ 헤더 작성
+            # 헤더
             ws.append(df.columns.tolist())
             for cell in ws[1]:
-                cell.fill = PatternFill(start_color="000000", end_color="000000", fill_type="solid")
+                cell.fill = PatternFill("solid", fgColor="000000")
                 cell.font = Font(color="FFFFFF", bold=True)
                 cell.alignment = Alignment(horizontal="center", vertical="center")
                 cell.border = thin_border
 
-            # ✅ 데이터 작성
             for row in dataframe_to_rows(df, index=False, header=False):
                 ws.append(row)
 
-            # ✅ 열 너비 조정
+            # 열 너비
             for i, width in enumerate([11, 11, 20, 40, 15]):
                 ws.column_dimensions[chr(65 + i)].width = width
             ws.column_dimensions['F'].width = 3
             ws.column_dimensions['I'].width = 3
             ws.sheet_view.showGridLines = False
 
-            # ✅ 셀 스타일 적용
             for row in ws.iter_rows(min_row=2, max_row=ws.max_row):
                 card = row[1].value
                 category = row[2].value
-                card_color = color_map_card.get(card, None)
-                category_color = color_map_category.get(category, None)
+                card_color = color_map_card.get(card)
+                cat_color = color_map_category.get(category)
                 for idx, cell in enumerate(row):
                     cell.border = thin_border
                     if idx == 4:
@@ -369,103 +305,66 @@ if uploaded_files:
                     else:
                         cell.alignment = Alignment(horizontal="left", vertical="center")
                 if card_color:
-                    row[0].fill = row[1].fill = PatternFill(start_color=card_color, end_color=card_color, fill_type="solid")
-                if category_color:
-                    row[2].fill = PatternFill(start_color=category_color, end_color=category_color, fill_type="solid")
+                    row[0].fill = row[1].fill = PatternFill("solid", fgColor=card_color)
+                if cat_color:
+                    row[2].fill = PatternFill("solid", fgColor=cat_color)
 
-            # ✅ 카테고리별 통계 표
+            # 카테고리별 통계
             ws["G1"] = "카테고리"
             ws["H1"] = "금액"
-            ws["G1"].fill = ws["H1"].fill = PatternFill(start_color="000000", end_color="000000", fill_type="solid")
+            ws["G1"].fill = ws["H1"].fill = PatternFill("solid", fgColor="000000")
             ws["G1"].font = ws["H1"].font = Font(color="FFFFFF", bold=True)
             ws["G1"].alignment = ws["H1"].alignment = Alignment(horizontal="center", vertical="center")
-            ws.column_dimensions['G'].width = 15
-            ws.column_dimensions['H'].width = 15
 
             stats = df.groupby("카테고리")["금액"].sum().reindex(color_map_category.keys()).dropna()
-            total_sum = df["금액"].sum()
-
             row_idx = 2
             for cat, amount in stats.items():
                 ws[f"G{row_idx}"] = cat
                 ws[f"H{row_idx}"] = int(amount)
                 ws[f"H{row_idx}"].number_format = '#,##0'
-                color = color_map_category.get(cat)
-                if color:
-                    ws[f"G{row_idx}"].fill = PatternFill(start_color=color, end_color=color, fill_type="solid")
+                cat_color = color_map_category.get(cat)
+                if cat_color:
+                    ws[f"G{row_idx}"].fill = PatternFill("solid", fgColor=cat_color)
                 ws[f"G{row_idx}"].border = ws[f"H{row_idx}"].border = thin_border
                 row_idx += 1
 
-            ws[f"G{row_idx}"] = "합계"
-            ws[f"H{row_idx}"] = int(total_sum)
-            ws[f"G{row_idx}"].fill = ws[f"H{row_idx}"].fill = PatternFill(start_color="000000", end_color="000000", fill_type="solid")
-            ws[f"G{row_idx}"].font = ws[f"H{row_idx}"].font = Font(color="FFFFFF", bold=True)
-            ws[f"G{row_idx}"].border = ws[f"H{row_idx}"].border = thin_border
-
-            # ✅ 카드사별 통계 표
+            # 카드사별 통계
             ws["G10"] = "카드사"
             ws["H10"] = "금액"
-            ws["G10"].fill = ws["H10"].fill = PatternFill(start_color="000000", end_color="000000", fill_type="solid")
+            ws["G10"].fill = ws["H10"].fill = PatternFill("solid", fgColor="000000")
             ws["G10"].font = ws["H10"].font = Font(color="FFFFFF", bold=True)
             ws["G10"].alignment = ws["H10"].alignment = Alignment(horizontal="center", vertical="center")
 
-            card_stats = df.groupby("카드")["금액"].sum().reindex(color_map_card.keys()).dropna()
-            card_total = df["금액"].sum()
-
+            stats2 = df.groupby("카드")["금액"].sum().reindex(color_map_card.keys()).dropna()
             row_idx = 11
-            for card_name, amount in card_stats.items():
-                ws[f"G{row_idx}"] = card_name
+            for card, amount in stats2.items():
+                ws[f"G{row_idx}"] = card
                 ws[f"H{row_idx}"] = int(amount)
                 ws[f"H{row_idx}"].number_format = '#,##0'
-                color = color_map_card.get(card_name)
-                if color:
-                    ws[f"G{row_idx}"].fill = PatternFill(start_color=color, end_color=color, fill_type="solid")
+                card_color = color_map_card.get(card)
+                if card_color:
+                    ws[f"G{row_idx}"].fill = PatternFill("solid", fgColor=card_color)
                 ws[f"G{row_idx}"].border = ws[f"H{row_idx}"].border = thin_border
                 row_idx += 1
 
-            ws[f"G{row_idx}"] = "합계"
-            ws[f"H{row_idx}"] = int(card_total)
-            ws[f"G{row_idx}"].fill = ws[f"H{row_idx}"].fill = PatternFill(start_color="000000", end_color="000000", fill_type="solid")
-            ws[f"G{row_idx}"].font = ws[f"H{row_idx}"].font = Font(color="FFFFFF", bold=True)
-            ws[f"G{row_idx}"].border = ws[f"H{row_idx}"].border = thin_border
-
-            # ✅ 원형 차트 (카테고리별)
+            # 원형 차트
             pie1 = PieChart()
             pie1.title = "카테고리별 사용 비중"
-            labels1 = Reference(ws, min_col=7, min_row=2, max_row=7)
-            data1 = Reference(ws, min_col=8, min_row=1, max_row=7)
-            pie1.add_data(data1, titles_from_data=True)
-            pie1.set_categories(labels1)
-            pie1.height = 7
-            pie1.width = 7
-            for idx, cat in enumerate(color_map_category.keys()):
-                dp = DataPoint(idx=idx)
-                dp.graphicalProperties.solidFill = color_map_category[cat]
-                pie1.series[0].data_points.append(dp)
+            pie1.add_data(Reference(ws, min_col=8, min_row=1, max_row=7), titles_from_data=True)
+            pie1.set_categories(Reference(ws, min_col=7, min_row=2, max_row=7))
             ws.add_chart(pie1, "J1")
 
-            # ✅ 원형 차트 (카드사별)
             pie2 = PieChart()
             pie2.title = "카드사별 사용 비중"
-            labels2 = Reference(ws, min_col=7, min_row=11, max_row=16)
-            data2 = Reference(ws, min_col=8, min_row=10, max_row=16)
-            pie2.add_data(data2, titles_from_data=True)
-            pie2.set_categories(labels2)
-            pie2.height = 7
-            pie2.width = 7
-            for idx, card in enumerate(color_map_card.keys()):
-                dp = DataPoint(idx=idx)
-                dp.graphicalProperties.solidFill = color_map_card[card]
-                pie2.series[0].data_points.append(dp)
+            pie2.add_data(Reference(ws, min_col=8, min_row=10, max_row=16), titles_from_data=True)
+            pie2.set_categories(Reference(ws, min_col=7, min_row=11, max_row=16))
             ws.add_chart(pie2, "J14")
 
             ws.page_margins = PageMargins(left=0.5, right=0.5, top=0.75, bottom=0.75)
             ws.sheet_properties = WorksheetProperties(pageSetUpPr=PageSetupProperties(fitToPage=True))
-
             wb.save(output)
             return output.getvalue()
 
-        # ✅ 다운로드 버튼
         st.download_button(
             label="📅 엑셀파일 다운로드",
             data=to_excel(final_df),
