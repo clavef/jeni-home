@@ -1,4 +1,4 @@
-# pages/rules.py
+# pages/_rules.py
 
 import streamlit as st
 import re
