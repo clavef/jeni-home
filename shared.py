@@ -20,7 +20,7 @@ def show_menu(active_page: str):
     st.sidebar.markdown(
         """
         <div class="sidebar-header">
-            <a href="/Home" target="_self">
+            <a href="/" target="_self">
                 <img src="https://raw.githubusercontent.com/clavef/jeniapp/main/logo.png" alt="Jeniapp Logo">
             </a>
         </div>
