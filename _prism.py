@@ -1,4 +1,4 @@
-# pages/_prism.py v28 (미사용 모듈 백업)
+# _prism.py v28 (미사용 모듈 백업)
 
 import streamlit as st
 import pandas as pd
