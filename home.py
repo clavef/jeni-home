@@ -39,8 +39,8 @@ if st.button("▶️ 정산 도우미 실행하기"):
 st.markdown("\n---")
 st.markdown("""
 <div style="font-size: 1rem; line-height: 1.8;">
-    🧰 향후 다양한 도구들이 계속 추가될 예정입니다.<br>
-    🚀 <a href="https://jeni.kr" target="_blank" style="text-decoration: none; color: #ff477a;">https://jeni.kr</a> 간편 주소로 더욱 빠르게 접속해보세요!<br>
+    🪄 향후 다양한 도구들이 계속 추가될 예정입니다.<br>
+    🚀 <a href="https://jeni.kr" target="_blank" style="text-decoration: none; color: #00b894;">https://jeni.kr</a> 간편 주소로 더욱 빠르게 접속해보세요!<br>
     🔷 jeniapp은 Snowflake의 지원을 받아 운영되고 있습니다.<br><br>
     <div style="background-color: #f0f2f6; padding: 0.6em 1em; border-radius: 6px; display: inline-block;">
         © 2025 jeniapp. All rights reserved.
