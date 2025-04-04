@@ -127,6 +127,16 @@ def parse_hyundai(file):
 # ✅ 삼성카드
 def parse_samsung(file):
     try:
+        def extract_excel_date(cell):
+            if isinstance(cell, str):
+                nums = re.findall(r"\d+", cell)
+                if nums:
+                    return int(nums[0])
+                return None
+            elif isinstance(cell, (int, float)):
+                return cell
+            return None
+
         xls = pd.ExcelFile(file)
         sheet = xls.sheet_names[0]
         raw = xls.parse(sheet, header=None)
@@ -134,52 +144,64 @@ def parse_samsung(file):
         header_keywords_sets = [
             {"승인일자", "승인시각", "가맹점명", "승인금액(원)"},
             {"이용일자", "카드번호", "사용처/가맹점", "이용금액"},
-            {"이용일자", "사용처/가맹점", "결제예정금액"},  # ✅ 연회비 구조 조건
+            {"이용일자", "사용처/가맹점", "결제예정금액"},
         ]
 
+        df = None
         for i, row in raw.iterrows():
             cells = [str(c).strip() for c in row if pd.notna(c)]
             for header_keywords in header_keywords_sets:
                 if header_keywords.issubset(set(cells)):
                     df = xls.parse(sheet, skiprows=i)
+                    df.columns = df.columns.astype(str).str.strip()
                     break
-            else:
-                continue
-            break
-        else:
+            if df is not None:
+                break
+
+        if df is None:
             return None
 
-        df.columns = df.columns.astype(str).str.strip()
+        # ✅ 승인내역 구조
+        if {"승인일자", "승인시각", "가맹점명", "승인금액(원)"}.issubset(df.columns):
+            df = df[["승인일자", "승인시각", "가맹점명", "승인금액(원)"]].copy()
+            df["승인일자"] = df["승인일자"].apply(extract_excel_date)
+            df["날짜"] = pd.to_datetime(df["승인일자"], errors="coerce", unit="d", origin="1899-12-30")
+            df = df[df["날짜"].notna()]
+            df["날짜"] = df["날짜"].dt.strftime("%Y.%m.%d")
+            df["사용처"] = df["가맹점명"]
+            df["금액"] = df["승인금액(원)"].astype(str).str.replace(",", "").astype(float)
+            df["카드"] = "삼성카드"
+            df["카테고리"] = ""
+            return df[["날짜", "카드", "카테고리", "사용처", "금액"]]
 
-        # ✅ 연회비 구조 파싱
-        if {"이용일자", "사용처/가맹점", "결제예정금액"}.issubset(set(df.columns)):
-            df = df[["이용일자", "사용처/가맹점", "결제예정금액"]].copy()
+        # ✅ 리볼빙 구조
+        if {"이용일자", "카드번호", "사용처/가맹점", "이용금액"}.issubset(df.columns):
+            df = df[["이용일자", "사용처/가맹점", "이용금액"]].copy()
             df.columns = ["날짜", "사용처", "금액"]
-
-            def extract_excel_date(cell):
-                if isinstance(cell, str):
-                    nums = re.findall(r"\d+", cell)
-                    if nums:
-                        return int(nums[0])
-                    return None
-                elif isinstance(cell, (int, float)):
-                    return cell
-                return None
-
             df["날짜"] = df["날짜"].apply(extract_excel_date)
             df["날짜"] = pd.to_datetime(df["날짜"], errors="coerce", unit="d", origin="1899-12-30")
             df = df[df["날짜"].notna()]
             df["날짜"] = df["날짜"].dt.strftime("%Y.%m.%d")
-
             df["금액"] = df["금액"].astype(str).str.replace(",", "").astype(float)
+            df["카드"] = "삼성카드"
+            df["카테고리"] = ""
+            return df[["날짜", "카드", "카테고리", "사용처", "금액"]]
 
+        # ✅ 연회비 구조
+        if {"이용일자", "사용처/가맹점", "결제예정금액"}.issubset(df.columns):
+            df = df[["이용일자", "사용처/가맹점", "결제예정금액"]].copy()
+            df.columns = ["날짜", "사용처", "금액"]
+            df["날짜"] = df["날짜"].apply(extract_excel_date)
+            df["날짜"] = pd.to_datetime(df["날짜"], errors="coerce", unit="d", origin="1899-12-30")
+            df = df[df["날짜"].notna()]
+            df["날짜"] = df["날짜"].dt.strftime("%Y.%m.%d")
+            df["금액"] = df["금액"].astype(str).str.replace(",", "").astype(float)
             df["카드"] = "삼성카드"
             df["카테고리"] = ""
             return df[["날짜", "카드", "카테고리", "사용처", "금액"]]
 
         return None
-
-    except Exception as e:
+    except:
         return None
 
 # ✅ 롯데카드
