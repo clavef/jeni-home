@@ -1,6 +1,5 @@
-# cards.py (v22) - 제니앱 카드값 계산기
+# cards.py v24 - 제니앱 카드값 계산기
 
-import streamlit as st
 import pandas as pd
 import re
 from typing import Optional
@@ -66,24 +65,28 @@ def detect_card_issuer(file) -> Optional[str]:
         xls = pd.ExcelFile(file)
         def normalize(text): return str(text).replace('\n', '').replace('\r', '').replace(' ', '').strip()
         patterns = {
-            "롯데카드": {"이용일자", "이용가맹점", "업종", "이용금액"},
-            "KB국민카드": {"이용일", "이용하신곳", "이용카드명", "국내이용금액(원)"},
-            "신한카드": {"거래일자", "이용가맹점", "거래금액"},
-            "현대카드": {"이용일", "이용가맹점", "이용금액"},
-            "삼성카드": {"승인일자", "가맹점명", "승인금액(원)"},
-            "하나카드": {"거래일자", "가맹점명", "이용금액"},
+            "롯데카드": [{"이용일자", "이용가맹점", "업종", "이용금액"}],
+            "KB국민카드": [{"이용일", "이용하신곳", "이용카드명", "국내이용금액(원)"}],
+            "신한카드": [{"거래일자", "이용가맹점", "거래금액"}],
+            "현대카드": [{"이용일", "이용가맹점", "이용금액"}],
+            "삼성카드": [
+                {"승인일자", "가맹점명", "승인금액(원)"},
+                {"이용일자", "이용처", "이용금액"}
+            ],
+            "하나카드": [{"거래일자", "가맹점명", "이용금액"}],
         }
         for sheet in xls.sheet_names:
             df = xls.parse(sheet, header=None)
             for i in range(min(100, len(df))):
                 row = df.iloc[i]
                 normed = set(normalize(cell) for cell in row if pd.notna(cell))
-                for issuer, keywords in patterns.items():
-                    if keywords.issubset(normed):
-                        return issuer
+                for issuer, pattern_sets in patterns.items():
+                    for keywords in pattern_sets:
+                        if keywords.issubset(normed):
+                            return issuer
         return None
     except Exception as e:
-        print("[ERROR] detect_card_issuer 예외 발생:", e)
+        print("[ERROR] detect_card_issuer 예제 발생:", e)
         return None
 
 # ✅ 카드사별 파서 연결
@@ -125,6 +128,7 @@ def parse_lotte(file):
     except:
         return None
 
+# ✅ 국민카드
 def parse_kb(file):
     try:
         xls = pd.ExcelFile(file)
@@ -149,6 +153,7 @@ def parse_kb(file):
     except:
         return None
 
+# ✅ 신한카드
 def parse_shinhan(file):
     try:
         df = pd.ExcelFile(file).parse(0, skiprows=2)
@@ -161,6 +166,7 @@ def parse_shinhan(file):
     except:
         return None
 
+# ✅ 현대카드
 def parse_hyundai(file):
     try:
         df = pd.ExcelFile(file).parse(0, skiprows=2)
@@ -175,6 +181,7 @@ def parse_hyundai(file):
     except:
         return None
 
+# ✅ 하나카드
 def parse_hana(file):
     try:
         df = pd.ExcelFile(file).parse(0, skiprows=28)
@@ -196,22 +203,37 @@ def parse_hana(file):
     except:
         return None
 
+# ✅ 삼성카드 파서 수정
 def parse_samsung(file):
     try:
-        df = pd.ExcelFile(file).parse(1)
-        df = df[["승인일자", "승인시각", "가맹점명", "승인금액(원)"]].dropna()
-        df["승인금액(원)"] = df["승인금액(원)"].astype(str).str.replace(",", "").astype(int)
-        df["매칭키"] = df["승인일자"].astype(str) + "_" + df["승인시각"].astype(str) + "_" + df["승인금액(원)"].abs().astype(str)
-        dupes = df[df.duplicated("매칭키", keep=False)]
-        to_remove = dupes.groupby("매칭키").filter(lambda g: (g["승인금액(원)"] > 0).any() and (g["승인금액(원)"] < 0).any())
-        df = df[~df.index.isin(to_remove.index)]
-
-        df["날짜"] = pd.to_datetime(df["승인일자"]).dt.strftime("%Y.%m.%d")
-        df["카드"] = "삼성카드"
-        df["사용처"] = df["가맹점명"]
-        df["금액"] = df["승인금액(원)"]
-        df["카테고리"] = ""
-        return df[["날짜", "카드", "카테고리", "사용처", "금액"]]
+        xls = pd.ExcelFile(file)
+        # case 1: 기존 구조
+        if len(xls.sheet_names) >= 2:
+            df = xls.parse(1)
+            if set(["승인일자", "승인시각", "가맹점명", "승인금액(원)"]).issubset(df.columns):
+                df = df[["승인일자", "승인시각", "가맹점명", "승인금액(원)"]].dropna()
+                df["승인금액(원)"] = df["승인금액(원)"].astype(str).str.replace(",", "").astype(int)
+                df["매칭키"] = df["승인일자"].astype(str) + "_" + df["승인시각"].astype(str) + "_" + df["승인금액(원)"].abs().astype(str)
+                dupes = df[df.duplicated("매칭키", keep=False)]
+                to_remove = dupes.groupby("매칭키").filter(lambda g: (g["승인금액(원)"] > 0).any() and (g["승인금액(원)"] < 0).any())
+                df = df[~df.index.isin(to_remove.index)]
+                df["날짜"] = pd.to_datetime(df["승인일자"]).dt.strftime("%Y.%m.%d")
+                df["카드"] = "삼성카드"
+                df["사용처"] = df["가맹점명"]
+                df["금액"] = df["승인금액(원)"]
+                df["카테고리"] = ""
+                return df[["날짜", "카드", "카테고리", "사용처", "금액"]]
+        # case 2: 새로운 구조 (이용일자 / 이용처)
+        df = xls.parse(0)
+        if set(["이용일자", "이용처", "이용금액"]).issubset(df.columns):
+            df = df[["이용일자", "이용처", "이용금액"]].dropna()
+            df.columns = ["날짜", "사용처", "금액"]
+            df["날짜"] = pd.to_datetime(df["날짜"], errors="coerce").dt.strftime("%Y.%m.%d")
+            df["카드"] = "삼성카드"
+            df["카테고리"] = ""
+            df["금액"] = pd.to_numeric(df["금액"], errors="coerce")
+            return df[["날짜", "카드", "카테고리", "사용처", "금액"]]
+        return None
     except:
         return None
 
