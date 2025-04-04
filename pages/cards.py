@@ -472,6 +472,6 @@ if uploaded_files:
         st.download_button(
             label="📅 엑셀파일 다운로드",
             data=to_excel(final_df),
-            file_name="카드값_통합내역.xlsx",
+            file_name="제니앱_카드값_계산기.xlsx",
             mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
         )
