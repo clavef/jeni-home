@@ -125,8 +125,23 @@ def parse_hyundai(file):
         return None
 
 # ✅ 삼성카드
+import re
+import pandas as pd
+import streamlit as st
+
+def extract_excel_date(cell):
+    if isinstance(cell, str):
+        nums = re.findall(r"\d+", cell)
+        if nums:
+            return int(nums[0])
+        return None
+    elif isinstance(cell, (int, float)):
+        return cell
+    return None
+
 def parse_samsung(file):
     try:
+        st.info("📦 삼성카드 파싱 시작")
         xls = pd.ExcelFile(file)
         sheet = xls.sheet_names[0]
         raw = xls.parse(sheet, header=None)
@@ -141,33 +156,31 @@ def parse_samsung(file):
             cells = [str(c).strip() for c in row if pd.notna(c)]
             for header_keywords in header_keywords_sets:
                 if header_keywords.issubset(set(cells)):
+                    st.success(f"✅ 헤더 발견 at row {i}: {header_keywords}")
                     df = xls.parse(sheet, skiprows=i)
                     break
             else:
                 continue
             break
         else:
+            st.error("❌ 삼성카드: 헤더 못 찾음")
             return None
 
-        df.columns = df.columns.str.strip()
+        # 컬럼 정리
+        df.columns = df.columns.astype(str).str.strip()
 
-        if {"이용일자", "카드번호", "사용처/가맹점", "이용금액"}.issubset(set(df.columns)):
+        # ✅ 실제 컬럼명 Streamlit에 출력 (1줄씩)
+        st.subheader("📋 실제 컬럼명 목록")
+        st.code("\n".join(df.columns.tolist()), language="text")
+
+        # ✅ 리볼빙 구조인지 확인
+        expected_cols = {"이용일자", "카드번호", "사용처/가맹점", "이용금액"}
+        actual_cols = set(df.columns)
+        if expected_cols.issubset(actual_cols):
             df = df[["이용일자", "사용처/가맹점", "이용금액"]].copy()
             df.columns = ["날짜", "사용처", "금액"]
 
-            # ✅ 디버깅용: 처리 전 데이터 확인
             st.write("📌 삼성 리볼빙 원본 일부", df.head(10))
-
-            # 날짜 변환
-            def extract_excel_date(cell):
-                if isinstance(cell, str):
-                    nums = re.findall(r"\d+", cell)
-                    if nums:
-                        return int(nums[0])
-                    return None
-                elif isinstance(cell, (int, float)):
-                    return cell
-                return None
 
             df["날짜"] = df["날짜"].apply(extract_excel_date)
             st.write("🕓 시리얼 숫자 추출 결과", df["날짜"].head())
@@ -188,6 +201,7 @@ def parse_samsung(file):
 
         st.warning("⚠️ 삼성카드: 리볼빙 구조 조건 불일치")
         return None
+
     except Exception as e:
         st.error(f"[ERROR] 삼성카드 파싱 중 예외 발생: {e}")
         return None
