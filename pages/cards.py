@@ -329,6 +329,7 @@ if uploaded_files:
             ws = wb.active
             ws.title = '카드내역'
 
+            card_list = ["국민카드", "현대카드", "롯데카드", "삼성카드", "하나카드", "신한카드"]
             color_map_card = {
                 "국민카드": "FBE2D5", "현대카드": "DDEBF7", "롯데카드": "CCCCFF",
                 "삼성카드": "E2EFDA", "하나카드": "FFF2CC", "신한카드": "DDD9C4",
@@ -417,7 +418,7 @@ if uploaded_files:
             ws["G10"].font = ws["H10"].font = Font(color="FFFFFF", bold=True)
             ws["G10"].alignment = ws["H10"].alignment = Alignment(horizontal="center", vertical="center")
 
-            stats2 = df.groupby("카드")["금액"].sum()
+            stats2 = df.groupby("카드")["금액"].sum().reindex(card_list, fill_value=0)
             row_idx = 11
             for card, amount in stats2.items():
                 ws[f"G{row_idx}"] = card
@@ -460,7 +461,7 @@ if uploaded_files:
             pie2.set_categories(Reference(ws, min_col=7, min_row=11, max_row=9 + card_rows))
             pie2.height = 7
             pie2.width = 9
-            card_colors = ["FBE2D5", "CCCCFF", "E2EFDA", "DDD9C4", "FFF2CC", "DDEBF7"]
+            card_colors = ["FBE2D5", "DDEBF7", "CCCCFF", "E2EFDA", "FFF2CC", "DDD9C4"]
             for i, color in enumerate(card_colors):
                 dp = DataPoint(idx=i)
                 dp.graphicalProperties.solidFill = color
