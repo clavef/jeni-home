@@ -179,12 +179,16 @@ def parse_hyundai(file):
     try:
         df = pd.ExcelFile(file).parse(0, skiprows=2)
         df = df[~df["이용가맹점"].astype(str).str.contains("합계|소계|총|이월", na=False)]
+
+        # 날짜 타입에 따라 다르게 처리
+        if pd.api.types.is_numeric_dtype(df["이용일"]):
+            df["이용일"] = pd.to_datetime(df["이용일"], unit="d", origin="1899-12-30", errors="coerce")
+        else:
+            df["이용일"] = pd.to_datetime(df["이용일"], errors="coerce")
         
-        # 날짜 처리 - 엑셀 시리얼 넘버 포함 대응
-        df["이용일"] = pd.to_datetime(df["이용일"], errors="coerce", unit="d", origin="1899-12-30")
-        df = df[df["이용일"].notna()]  # 유효한 날짜만 필터링
+        df = df[df["이용일"].notna()]
         df["이용일"] = df["이용일"].dt.strftime("%Y.%m.%d")
-        
+
         df = df[["이용일", "이용가맹점", "이용금액"]]
         df.columns = ["날짜", "사용처", "금액"]
         df["카드"] = "현대카드"
@@ -245,7 +249,7 @@ def parse_samsung(file):
         if {"이용일자", "사용처/가맹점", "결제예정금액"}.issubset(set(df.columns)):
             df = df[["이용일자", "사용처/가맹점", "결제예정금액"]].dropna()
             df.columns = ["날짜", "사용처", "금액"]
-            df["날짜"] = pd.to_datetime(df["날짜"], errors="coerce", unit="d", origin="1899-12-30")
+            df["날짜"] = convert_date(df["날짜"])
             df = df[df["날짜"].notna()]
             df["날짜"] = df["날짜"].dt.strftime("%Y.%m.%d")
             df["카드"] = "삼성카드"
@@ -257,7 +261,7 @@ def parse_samsung(file):
         if {"이용일자", "카드번호", "사용처/가맹점", "이용금액"}.issubset(set(df.columns)):
             df = df[["이용일자", "사용처/가맹점", "이용금액"]].dropna()
             df.columns = ["날짜", "사용처", "금액"]
-            df["날짜"] = pd.to_datetime(df["날짜"], errors="coerce", unit="d", origin="1899-12-30")
+            df["날짜"] = convert_date(df["날짜"])
             df = df[df["날짜"].notna()]
             df["날짜"] = df["날짜"].dt.strftime("%Y.%m.%d")
             df["카드"] = "삼성카드"
@@ -273,7 +277,7 @@ def parse_samsung(file):
             dupes = df[df.duplicated("매칭키", keep=False)]
             to_remove = dupes.groupby("매칭키").filter(lambda g: (g["승인금액(원)"] > 0).any() and (g["승인금액(원)"] < 0).any())
             df = df[~df.index.isin(to_remove.index)]
-            df["날짜"] = pd.to_datetime(df["승인일자"], errors="coerce", unit="d", origin="1899-12-30")
+            df["날짜"] = convert_date(df["승인일자"])
             df = df[df["날짜"].notna()]
             df["날짜"] = df["날짜"].dt.strftime("%Y.%m.%d")
             df["카드"] = "삼성카드"
