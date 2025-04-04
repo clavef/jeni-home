@@ -146,12 +146,15 @@ def parse_samsung(file):
             break
         else:
             return None
+
         df.columns = df.columns.str.strip()
 
+        # ✅ 연회비 구조
         if {"이용일자", "사용처/가맹점", "결제예정금액"}.issubset(set(df.columns)):
             df = df[["이용일자", "사용처/가맹점", "결제예정금액"]].dropna()
             df.columns = ["날짜", "사용처", "금액"]
-            df["날짜"] = safe_excel_date(df["날짜"])
+            df["날짜"] = df["날짜"].apply(extract_excel_date)
+            df["날짜"] = pd.to_datetime(df["날짜"], errors="coerce", unit="d", origin="1899-12-30")
             df = df[df["날짜"].notna()]
             df["날짜"] = df["날짜"].dt.strftime("%Y.%m.%d")
             df["카드"] = "삼성카드"
@@ -159,10 +162,12 @@ def parse_samsung(file):
             df["금액"] = df["금액"].astype(str).str.replace(",", "").astype(float)
             return df[["날짜", "카드", "카테고리", "사용처", "금액"]]
 
+        # ✅ 리볼빙 구조
         if {"이용일자", "카드번호", "사용처/가맹점", "이용금액"}.issubset(set(df.columns)):
             df = df[["이용일자", "사용처/가맹점", "이용금액"]].dropna()
             df.columns = ["날짜", "사용처", "금액"]
-            df["날짜"] = safe_excel_date(df["날짜"])
+            df["날짜"] = df["날짜"].apply(extract_excel_date)
+            df["날짜"] = pd.to_datetime(df["날짜"], errors="coerce", unit="d", origin="1899-12-30")
             df = df[df["날짜"].notna()]
             df["날짜"] = df["날짜"].dt.strftime("%Y.%m.%d")
             df["카드"] = "삼성카드"
@@ -170,6 +175,7 @@ def parse_samsung(file):
             df["금액"] = df["금액"].astype(str).str.replace(",", "").astype(float)
             return df[["날짜", "카드", "카테고리", "사용처", "금액"]]
 
+        # ✅ 승인내역 구조
         if {"승인일자", "승인시각", "가맹점명", "승인금액(원)"}.issubset(set(df.columns)):
             df = df[["승인일자", "승인시각", "가맹점명", "승인금액(원)"]].dropna()
             df["승인금액(원)"] = df["승인금액(원)"].astype(str).str.replace(",", "").astype(int)
@@ -177,7 +183,8 @@ def parse_samsung(file):
             dupes = df[df.duplicated("매칭키", keep=False)]
             to_remove = dupes.groupby("매칭키").filter(lambda g: (g["승인금액(원)"] > 0).any() and (g["승인금액(원)"] < 0).any())
             df = df[~df.index.isin(to_remove.index)]
-            df["날짜"] = safe_excel_date(df["승인일자"])
+            df["승인일자"] = df["승인일자"].apply(extract_excel_date)
+            df["날짜"] = pd.to_datetime(df["승인일자"], errors="coerce", unit="d", origin="1899-12-30")
             df = df[df["날짜"].notna()]
             df["날짜"] = df["날짜"].dt.strftime("%Y.%m.%d")
             df["카드"] = "삼성카드"
@@ -185,9 +192,9 @@ def parse_samsung(file):
             df["금액"] = df["승인금액(원)"]
             df["카테고리"] = ""
             return df[["날짜", "카드", "카테고리", "사용처", "금액"]]
+
         return None
     except Exception as e:
-        print("[ERROR] parse_samsung 예외:", e)
         return None
 
 # ✅ 롯데카드
