@@ -401,7 +401,9 @@ if uploaded_files:
             ws[f"G{row_idx}"] = "합계"
             ws[f"H{row_idx}"] = int(stats.sum())
             ws[f"G{row_idx}"].fill = ws[f"H{row_idx}"].fill = PatternFill("solid", fgColor="000000")
-            ws[f"G{row_idx}"].font = ws[f"H{row_idx}"].font = Font(color="FFFFFF")
+            ws[f"G{row_idx}"].font = Font(color="FFFFFF", bold=True)
+            ws[f"H{row_idx}"].font = Font(color="FFFFFF", bold=True)
+            ws[f"H{row_idx}"].number_format = '#,##0'
             ws[f"G{row_idx}"].alignment = ws[f"H{row_idx}"].alignment = Alignment(horizontal="center", vertical="center")
             ws[f"G{row_idx}"].border = ws[f"H{row_idx}"].border = thin_border
 
@@ -429,7 +431,9 @@ if uploaded_files:
             ws[f"G{row_idx}"] = "합계"
             ws[f"H{row_idx}"] = int(stats2.sum())
             ws[f"G{row_idx}"].fill = ws[f"H{row_idx}"].fill = PatternFill("solid", fgColor="000000")
-            ws[f"G{row_idx}"].font = ws[f"H{row_idx}"].font = Font(color="FFFFFF")
+            ws[f"G{row_idx}"].font = Font(color="FFFFFF", bold=True)
+            ws[f"H{row_idx}"].font = Font(color="FFFFFF", bold=True)
+            ws[f"H{row_idx}"].number_format = '#,##0'
             ws[f"G{row_idx}"].alignment = ws[f"H{row_idx}"].alignment = Alignment(horizontal="center", vertical="center")
             ws[f"G{row_idx}"].border = ws[f"H{row_idx}"].border = thin_border
 
