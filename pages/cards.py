@@ -395,6 +395,8 @@ if uploaded_files:
                 ws[f"G{row_idx}"].border = ws[f"H{row_idx}"].border = thin_border
                 row_idx += 1
 
+            cat_rows = len(stats)
+
             # 카드사별 통계
             ws["G10"] = "카드사"
             ws["H10"] = "금액"
@@ -413,17 +415,19 @@ if uploaded_files:
                 ws[f"G{row_idx}"].border = ws[f"H{row_idx}"].border = thin_border
                 row_idx += 1
 
+            card_rows = len(stats2)
+
             # 원형 차트
             pie1 = PieChart()
             pie1.title = "카테고리별 사용 비중"
-            pie1.add_data(Reference(ws, min_col=8, min_row=1, max_row=7), titles_from_data=True)
-            pie1.set_categories(Reference(ws, min_col=7, min_row=2, max_row=7))
+            pie1.add_data(Reference(ws, min_col=8, min_row=1, max_row=1 + cat_rows), titles_from_data=True)
+            pie1.set_categories(Reference(ws, min_col=7, min_row=2, max_row=1 + cat_rows))
             ws.add_chart(pie1, "J1")
 
             pie2 = PieChart()
             pie2.title = "카드사별 사용 비중"
-            pie2.add_data(Reference(ws, min_col=8, min_row=10, max_row=16), titles_from_data=True)
-            pie2.set_categories(Reference(ws, min_col=7, min_row=11, max_row=16))
+            pie2.add_data(Reference(ws, min_col=8, min_row=10, max_row=9 + card_rows), titles_from_data=True)
+            pie2.set_categories(Reference(ws, min_col=7, min_row=11, max_row=9 + card_rows))
             ws.add_chart(pie2, "J14")
 
             ws.page_margins = PageMargins(left=0.5, right=0.5, top=0.75, bottom=0.75)
