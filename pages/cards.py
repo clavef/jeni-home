@@ -323,7 +323,6 @@ if uploaded_files:
             from openpyxl.worksheet.properties import WorksheetProperties, PageSetupProperties
             from openpyxl.chart import PieChart, Reference
             from openpyxl.chart.series import DataPoint
-            from openpyxl.chart.layout import Layout, ManualLayout
 
             output = BytesIO()
             wb = Workbook()
@@ -440,25 +439,31 @@ if uploaded_files:
             ws[f"G{row_idx}"].alignment = ws[f"H{row_idx}"].alignment = Alignment(horizontal="center", vertical="center")
             ws[f"G{row_idx}"].border = ws[f"H{row_idx}"].border = thin_border
 
+            card_rows = row_idx - 11
+
             # 원형 차트
-            category_colors = ["92D050", "FFC000", "00B0F0", "FF99CC", "FFCC99", "A9D08E", "F4B084"]
             pie1 = PieChart()
             pie1.title = "카테고리별 사용 비중"
             pie1.add_data(Reference(ws, min_col=8, min_row=1, max_row=1 + cat_rows), titles_from_data=True)
             pie1.set_categories(Reference(ws, min_col=7, min_row=2, max_row=1 + cat_rows))
-            pie1.layout = Layout(manualLayout=ManualLayout(x=0.55, y=0.10, w=0.35, h=0.35))
+            pie1.height = 7
+            pie1.width = 7
+            pie1.legend.position = "l"
+            category_colors = ["92D050", "FFC000", "00B0F0", "FF99CC", "FFCC99", "A9D08E", "F4B084"]
             for i, color in enumerate(category_colors):
                 dp = DataPoint(idx=i)
                 dp.graphicalProperties.solidFill = color
                 pie1.series[0].data_points.append(dp)
             ws.add_chart(pie1, "J1")
 
-            card_colors = ["FBE2D5", "DDEBF7", "CCCCFF", "E2EFDA", "FFF2CC", "DDD9C4"]
             pie2 = PieChart()
             pie2.title = "카드사별 사용 비중"
             pie2.add_data(Reference(ws, min_col=8, min_row=10, max_row=10 + len(card_list)), titles_from_data=True)
             pie2.set_categories(Reference(ws, min_col=7, min_row=11, max_row=10 + len(card_list)))
-            pie2.layout = Layout(manualLayout=ManualLayout(x=0.55, y=0.55, w=0.35, h=0.35))
+            pie2.height = 7
+            pie2.width = 7
+            pie2.legend.position = "l"
+            card_colors = ["FBE2D5", "DDEBF7", "CCCCFF", "E2EFDA", "FFF2CC", "DDD9C4"]
             for i, color in enumerate(card_colors):
                 dp = DataPoint(idx=i)
                 dp.graphicalProperties.solidFill = color
