@@ -96,7 +96,7 @@ if file_kz and file_snc:
         st.dataframe(result_df.style.apply(highlight, axis=1), use_container_width=True)
 
         csv = result_df.to_csv(index=False).encode('utf-8-sig')
-        st.download_button("엑셀로 다운로드", data=csv, file_name="MBL_비교_결과.csv", mime="text/csv")
+        st.download_button("📅 엑셀파일 다운로드", data=csv, file_name="제이앱_정산_도우미.csv", mime="text/csv")
 
     except Exception as e:
         st.error(f"🚨 처리 중 오류가 발생했습니다: {str(e)}")
