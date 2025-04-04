@@ -163,7 +163,7 @@ if uploaded_zip:
                 output = BytesIO()
                 wb.save(output)
                 st.download_button(
-                    label="📥 XLSX로 다운로드",
+                    label="📅 엑셀파일 다운로드",
                     data=output.getvalue(),
                     file_name="jeniapp_check.xlsx",
                     mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
