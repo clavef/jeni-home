@@ -72,30 +72,21 @@ def detect_card_issuer(file) -> Optional[str]:
             "현대카드": [{"이용일", "이용가맹점", "이용금액"}],
             "삼성카드": [
                 {"승인일자", "가맹점명", "승인금액(원)"},
-                {"이용일자", "이용처", "이용금액"}
+                {"이용일자", "사용처/가맹점", "이용금액"}  # ✅ 리볼빙 형식용 키워드셋 추가
             ],
             "하나카드": [{"거래일자", "가맹점명", "이용금액"}],
         }
 
         for sheet in xls.sheet_names:
             df = xls.parse(sheet, header=None)
-            for i in range(min(30, len(df))):  # 앞부분 30줄만 스캔
+            for i in range(min(100, len(df))):
                 row = df.iloc[i]
-                normed_row = set(normalize(cell) for cell in row if pd.notna(cell))
+                normed = set(normalize(cell) for cell in row if pd.notna(cell))
                 for issuer, keyword_sets in patterns.items():
                     for keyword_set in keyword_sets:
                         normed_keywords = set(normalize(k) for k in keyword_set)
-                        if normed_keywords.issubset(normed_row):
+                        if normed_keywords.issubset(normed):
                             return issuer
-
-            # 보너스: 컬럼명이 제대로 잡힌 경우도 체크
-            df_col_check = xls.parse(sheet, header=0)
-            normed_cols = set(normalize(col) for col in df_col_check.columns if col)
-            for issuer, keyword_sets in patterns.items():
-                for keyword_set in keyword_sets:
-                    normed_keywords = set(normalize(k) for k in keyword_set)
-                    if normed_keywords.issubset(normed_cols):
-                        return issuer
 
         return None
     except Exception as e:
