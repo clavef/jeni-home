@@ -1,4 +1,4 @@
-
+# cards.py v24 - 제니앱 카드값 계산기
 
 import streamlit as st
 import pandas as pd
@@ -395,6 +395,14 @@ if uploaded_files:
                 ws[f"G{row_idx}"].border = ws[f"H{row_idx}"].border = thin_border
                 row_idx += 1
 
+            # ✅ 카테고리 합계
+            ws[f"G{row_idx}"] = "합계"
+            ws[f"H{row_idx}"] = int(stats.sum())
+            ws[f"G{row_idx}"].fill = ws[f"H{row_idx}"].fill = PatternFill("solid", fgColor="000000")
+            ws[f"G{row_idx}"].font = ws[f"H{row_idx}"].font = Font(color="FFFFFF", bold=True)
+            ws[f"G{row_idx}"].alignment = ws[f"H{row_idx}"].alignment = Alignment(horizontal="center", vertical="center")
+            ws[f"G{row_idx}"].border = ws[f"H{row_idx}"].border = thin_border
+
             cat_rows = len(stats)
 
             # 카드사별 통계
@@ -414,6 +422,14 @@ if uploaded_files:
                 ws[f"G{row_idx}"].fill = PatternFill("solid", fgColor=card_color)
                 ws[f"G{row_idx}"].border = ws[f"H{row_idx}"].border = thin_border
                 row_idx += 1
+
+            # ✅ 카드사 합계
+            ws[f"G{row_idx}"] = "합계"
+            ws[f"H{row_idx}"] = int(stats2.sum())
+            ws[f"G{row_idx}"].fill = ws[f"H{row_idx}"].fill = PatternFill("solid", fgColor="000000")
+            ws[f"G{row_idx}"].font = ws[f"H{row_idx}"].font = Font(color="FFFFFF", bold=True)
+            ws[f"G{row_idx}"].alignment = ws[f"H{row_idx}"].alignment = Alignment(horizontal="center", vertical="center")
+            ws[f"G{row_idx}"].border = ws[f"H{row_idx}"].border = thin_border
 
             card_rows = len(stats2)
 
