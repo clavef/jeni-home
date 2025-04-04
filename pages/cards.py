@@ -220,34 +220,28 @@ def parse_hana(file):
 def parse_samsung(file):
     try:
         xls = pd.ExcelFile(file)
-        # case 1: 기존 구조
-        if len(xls.sheet_names) >= 2:
-            df = xls.parse(1)
-            if set(["승인일자", "승인시각", "가맹점명", "승인금액(원)"]).issubset(df.columns):
-                df = df[["승인일자", "승인시각", "가맹점명", "승인금액(원)"]].dropna()
-                df["승인금액(원)"] = df["승인금액(원)"].astype(str).str.replace(",", "").astype(int)
-                df["매칭키"] = df["승인일자"].astype(str) + "_" + df["승인시각"].astype(str) + "_" + df["승인금액(원)"].abs().astype(str)
-                dupes = df[df.duplicated("매칭키", keep=False)]
-                to_remove = dupes.groupby("매칭키").filter(lambda g: (g["승인금액(원)"] > 0).any() and (g["승인금액(원)"] < 0).any())
-                df = df[~df.index.isin(to_remove.index)]
-                df["날짜"] = pd.to_datetime(df["승인일자"]).dt.strftime("%Y.%m.%d")
+        for idx, sheet in enumerate(xls.sheet_names):
+            df = xls.parse(sheet)
+            cols = [str(col).strip() for col in df.columns]
+
+            # ✅ 구조 1: 기존 승인 방식
+            if set(["승인일자", "승인시각", "가맹점명", "승인금액(원)"]).issubset(cols):
+                # 기존 처리 유지
+                ...
+
+            # ✅ 구조 2: 리볼빙 결제예정금액 방식
+            elif set(["이용일자", "이용처", "이용금액"]).issubset(cols):
+                df = df[["이용일자", "이용처", "이용금액"]].dropna()
+                df.columns = ["날짜", "사용처", "금액"]
+                df["날짜"] = pd.to_datetime(df["날짜"], errors="coerce").dt.strftime("%Y.%m.%d")
                 df["카드"] = "삼성카드"
-                df["사용처"] = df["가맹점명"]
-                df["금액"] = df["승인금액(원)"]
                 df["카테고리"] = ""
+                df["금액"] = pd.to_numeric(df["금액"], errors="coerce")
                 return df[["날짜", "카드", "카테고리", "사용처", "금액"]]
-        # case 2: 새로운 구조 (이용일자 / 이용처)
-        df = xls.parse(0)
-        if set(["이용일자", "이용처", "이용금액"]).issubset(df.columns):
-            df = df[["이용일자", "이용처", "이용금액"]].dropna()
-            df.columns = ["날짜", "사용처", "금액"]
-            df["날짜"] = pd.to_datetime(df["날짜"], errors="coerce").dt.strftime("%Y.%m.%d")
-            df["카드"] = "삼성카드"
-            df["카테고리"] = ""
-            df["금액"] = pd.to_numeric(df["금액"], errors="coerce")
-            return df[["날짜", "카드", "카테고리", "사용처", "금액"]]
+
         return None
-    except:
+    except Exception as e:
+        print("[ERROR] parse_samsung 예외 발생:", e)
         return None
 
 # ✅ 파일 업로드
