@@ -94,13 +94,11 @@ def parse_hyundai(file):
         xls = pd.ExcelFile(file)
         df = xls.parse(0, skiprows=2)
         df.columns = df.columns.astype(str).str.strip()
-        st.write("📌 정리된 컬럼명:", df.columns.tolist())
 
         if not {"이용일", "이용가맹점", "이용금액"}.issubset(df.columns):
-            st.error("❌ [현대카드] 필수 컬럼 없음")
             return None
 
-        # ✅ 병합된 문자열에서 숫자 추출
+        # 병합된 문자열에서 숫자 추출
         def extract_first_number(cell):
             if isinstance(cell, str):
                 numbers = re.findall(r"\d+", cell)
@@ -121,12 +119,10 @@ def parse_hyundai(file):
         df.columns = ["날짜", "사용처", "금액"]
         df["카드"] = "현대카드"
         df["카테고리"] = ""
-        st.success(f"✅ [현대카드] 파싱 성공: {len(df)}건")
-        return df[["날짜", "카드", "카테고리", "사용처", "금액"]]
-    except Exception as e:
-        st.error(f"[ERROR] 현대카드 파싱 오류: {e}")
-        return None
 
+        return df[["날짜", "카드", "카테고리", "사용처", "금액"]]
+    except:
+        return None
 
 # ✅ 삼성카드
 def parse_samsung(file):
