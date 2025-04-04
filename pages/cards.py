@@ -321,8 +321,7 @@ if uploaded_files:
             from openpyxl.styles import PatternFill, Font, Alignment, Border, Side
             from openpyxl.worksheet.page import PageMargins
             from openpyxl.worksheet.properties import WorksheetProperties, PageSetupProperties
-            from openpyxl.chart import PieChart, Reference
-            from openpyxl.chart.series import DataPoint
+            from openpyxl.chart import BarChart, Reference
 
             output = BytesIO()
             wb = Workbook()
@@ -357,6 +356,7 @@ if uploaded_files:
             for row in dataframe_to_rows(df, index=False, header=False):
                 ws.append(row)
 
+            # 열 너비
             for i, width in enumerate([11, 11, 20, 40, 15]):
                 ws.column_dimensions[chr(65 + i)].width = width
             ws.column_dimensions['F'].width = 3
@@ -380,6 +380,7 @@ if uploaded_files:
                 row[0].fill = row[1].fill = PatternFill("solid", fgColor=card_color)
                 row[2].fill = PatternFill("solid", fgColor=cat_color)
 
+            # 카테고리별 통계 테이블
             ws["G1"] = "카테고리"
             ws["H1"] = "금액"
             ws["G1"].fill = ws["H1"].fill = PatternFill("solid", fgColor="000000")
@@ -409,6 +410,7 @@ if uploaded_files:
 
             cat_rows = row_idx - 1
 
+            # 카드사별 통계 테이블
             ws["G10"] = "카드사"
             ws["H10"] = "금액"
             ws["G10"].fill = ws["H10"].fill = PatternFill("solid", fgColor="000000")
@@ -436,33 +438,32 @@ if uploaded_files:
             ws[f"G{row_idx}"].alignment = ws[f"H{row_idx}"].alignment = Alignment(horizontal="center", vertical="center")
             ws[f"G{row_idx}"].border = ws[f"H{row_idx}"].border = thin_border
 
-            card_rows = row_idx - 11
+            # 묶은 가로 막대형 차트로 교체
+            bar1 = BarChart()
+            bar1.type = "bar"
+            bar1.style = 10
+            bar1.height = 6
+            bar1.width = 6
+            bar1.title = None
+            bar1.legend = None
+            bar1.x_axis.delete = True
 
-            pie1 = PieChart()
-            pie1.title = "카테고리별 사용 비중"
-            pie1.add_data(Reference(ws, min_col=8, min_row=1, max_row=1 + cat_rows), titles_from_data=True)
-            pie1.set_categories(Reference(ws, min_col=7, min_row=2, max_row=1 + cat_rows))
-            pie1.height = 10.5
-            pie1.width = 13.5
-            category_colors = ["92D050", "FFC000", "00B0F0", "FF99CC", "FFCC99", "A9D08E", "F4B084"]
-            for i, color in enumerate(category_colors):
-                dp = DataPoint(idx=i)
-                dp.graphicalProperties.solidFill = color
-                pie1.series[0].data_points.append(dp)
-            ws.add_chart(pie1, "J1")
+            bar1.add_data(Reference(ws, min_col=8, min_row=1, max_row=1 + cat_rows), titles_from_data=True)
+            bar1.set_categories(Reference(ws, min_col=7, min_row=2, max_row=1 + cat_rows))
+            ws.add_chart(bar1, "J1")
 
-            pie2 = PieChart()
-            pie2.title = "카드사별 사용 비중"
-            pie2.add_data(Reference(ws, min_col=8, min_row=10, max_row=10 + len(card_list)), titles_from_data=True)
-            pie2.set_categories(Reference(ws, min_col=7, min_row=11, max_row=10 + len(card_list)))
-            pie2.height = 10.5
-            pie2.width = 13.5
-            card_colors = ["FBE2D5", "DDEBF7", "CCCCFF", "E2EFDA", "FFF2CC", "DDD9C4"]
-            for i, color in enumerate(card_colors):
-                dp = DataPoint(idx=i)
-                dp.graphicalProperties.solidFill = color
-                pie2.series[0].data_points.append(dp)
-            ws.add_chart(pie2, "J20")
+            bar2 = BarChart()
+            bar2.type = "bar"
+            bar2.style = 10
+            bar2.height = 6
+            bar2.width = 6
+            bar2.title = None
+            bar2.legend = None
+            bar2.x_axis.delete = True
+
+            bar2.add_data(Reference(ws, min_col=8, min_row=10, max_row=10 + len(card_list)), titles_from_data=True)
+            bar2.set_categories(Reference(ws, min_col=7, min_row=11, max_row=10 + len(card_list)))
+            ws.add_chart(bar2, "J14")
 
             ws.page_margins = PageMargins(left=0.5, right=0.5, top=0.75, bottom=0.75)
             ws.sheet_properties = WorksheetProperties(pageSetUpPr=PageSetupProperties(fitToPage=True))
