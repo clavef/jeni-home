@@ -444,12 +444,16 @@ if uploaded_files:
             pie1.title = "카테고리별 사용 비중"
             pie1.add_data(Reference(ws, min_col=8, min_row=1, max_row=1 + cat_rows), titles_from_data=True)
             pie1.set_categories(Reference(ws, min_col=7, min_row=2, max_row=1 + cat_rows))
+            pie1.height = 6  # 제목 겹침 방지
+            pie1.width = 8
             ws.add_chart(pie1, "J1")
 
             pie2 = PieChart()
             pie2.title = "카드사별 사용 비중"
             pie2.add_data(Reference(ws, min_col=8, min_row=10, max_row=9 + card_rows), titles_from_data=True)
             pie2.set_categories(Reference(ws, min_col=7, min_row=11, max_row=9 + card_rows))
+            pie2.height = 6
+            pie2.width = 8
             ws.add_chart(pie2, "J14")
 
             ws.page_margins = PageMargins(left=0.5, right=0.5, top=0.75, bottom=0.75)
@@ -463,3 +467,4 @@ if uploaded_files:
             file_name="카드값_통합내역.xlsx",
             mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
         )
+
