@@ -1,5 +1,6 @@
 # cards.py v24 - 제니앱 카드값 계산기
 
+import streamlit as st
 import pandas as pd
 import re
 from typing import Optional
