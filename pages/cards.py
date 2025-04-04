@@ -125,15 +125,21 @@ def parse_hyundai(file):
         return None
 
 # ✅ 삼성카드
+def extract_excel_date(cell):
+    if isinstance(cell, str):
+        nums = re.findall(r"\d+", cell)
+        if nums:
+            return int(nums[0])
+        return None
+    elif isinstance(cell, (int, float)):
+        return cell
+    return None
+
 def parse_samsung(file):
     try:
-        st.info("📦 삼성카드 파싱 시작")
         xls = pd.ExcelFile(file)
         sheet = xls.sheet_names[0]
         raw = xls.parse(sheet, header=None)
-
-        # 🔍 시트 구조 일부 보기
-        st.write("📌 삼성카드 원본 시트 앞부분", raw.head())
 
         header_keywords_sets = [
             {"승인일자", "승인시각", "가맹점명", "승인금액(원)"},
@@ -145,28 +151,37 @@ def parse_samsung(file):
             cells = [str(c).strip() for c in row if pd.notna(c)]
             for header_keywords in header_keywords_sets:
                 if header_keywords.issubset(set(cells)):
-                    st.success(f"✅ 헤더 발견 at row {i}: {header_keywords}")
                     df = xls.parse(sheet, skiprows=i)
                     break
             else:
                 continue
             break
         else:
-            st.error("❌ 삼성카드: 헤더 못 찾음")
             return None
-
-        st.write("📌 삼성카드 df.head()", df.head())
-        st.write("📌 삼성카드 컬럼명:", df.columns.tolist())
 
         df.columns = df.columns.str.strip()
 
-        # 나머지 구조 분기 로직은 생략하고, 이 상태에서 확인만 먼저 하자
-        return None
+        # ✅ 리볼빙 구조 처리
+        if {"이용일자", "카드번호", "사용처/가맹점", "이용금액"}.issubset(set(df.columns)):
+            df = df[["이용일자", "사용처/가맹점", "이용금액"]].dropna()
+            df.columns = ["날짜", "사용처", "금액"]
 
+            # 날짜 처리
+            df["날짜"] = df["날짜"].apply(extract_excel_date)
+            df["날짜"] = pd.to_datetime(df["날짜"], errors="coerce", unit="d", origin="1899-12-30")
+            df = df[df["날짜"].notna()]
+            df["날짜"] = df["날짜"].dt.strftime("%Y.%m.%d")
+
+            # 금액 처리
+            df["금액"] = df["금액"].astype(str).str.replace(",", "").astype(float)
+
+            df["카드"] = "삼성카드"
+            df["카테고리"] = ""
+            return df[["날짜", "카드", "카테고리", "사용처", "금액"]]
+
+        return None
     except Exception as e:
-        st.error(f"[ERROR] 삼성카드 파싱 중 예외 발생: {e}")
         return None
-
 
 # ✅ 롯데카드
 def parse_lotte(file):
