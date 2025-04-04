@@ -125,16 +125,6 @@ def parse_hyundai(file):
         return None
 
 # ✅ 삼성카드
-def extract_excel_date(cell):
-    if isinstance(cell, str):
-        nums = re.findall(r"\d+", cell)
-        if nums:
-            return int(nums[0])
-        return None
-    elif isinstance(cell, (int, float)):
-        return cell
-    return None
-
 def parse_samsung(file):
     try:
         xls = pd.ExcelFile(file)
@@ -161,26 +151,45 @@ def parse_samsung(file):
 
         df.columns = df.columns.str.strip()
 
-        # ✅ 리볼빙 구조 처리
         if {"이용일자", "카드번호", "사용처/가맹점", "이용금액"}.issubset(set(df.columns)):
-            df = df[["이용일자", "사용처/가맹점", "이용금액"]].dropna()
+            df = df[["이용일자", "사용처/가맹점", "이용금액"]].copy()
             df.columns = ["날짜", "사용처", "금액"]
 
-            # 날짜 처리
+            # ✅ 디버깅용: 처리 전 데이터 확인
+            st.write("📌 삼성 리볼빙 원본 일부", df.head(10))
+
+            # 날짜 변환
+            def extract_excel_date(cell):
+                if isinstance(cell, str):
+                    nums = re.findall(r"\d+", cell)
+                    if nums:
+                        return int(nums[0])
+                    return None
+                elif isinstance(cell, (int, float)):
+                    return cell
+                return None
+
             df["날짜"] = df["날짜"].apply(extract_excel_date)
+            st.write("🕓 시리얼 숫자 추출 결과", df["날짜"].head())
+
             df["날짜"] = pd.to_datetime(df["날짜"], errors="coerce", unit="d", origin="1899-12-30")
+            st.write("📅 날짜 변환 결과", df["날짜"].head())
+
             df = df[df["날짜"].notna()]
             df["날짜"] = df["날짜"].dt.strftime("%Y.%m.%d")
 
-            # 금액 처리
             df["금액"] = df["금액"].astype(str).str.replace(",", "").astype(float)
 
             df["카드"] = "삼성카드"
             df["카테고리"] = ""
+
+            st.success(f"✅ 삼성 리볼빙 파싱 성공: {len(df)}건")
             return df[["날짜", "카드", "카테고리", "사용처", "금액"]]
 
+        st.warning("⚠️ 삼성카드: 리볼빙 구조 조건 불일치")
         return None
     except Exception as e:
+        st.error(f"[ERROR] 삼성카드 파싱 중 예외 발생: {e}")
         return None
 
 # ✅ 롯데카드
