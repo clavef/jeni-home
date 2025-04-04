@@ -1,4 +1,4 @@
-# cards.py v24 - 제니앱 카드값 계산기
+
 
 import streamlit as st
 import pandas as pd
@@ -106,6 +106,9 @@ def parse_card_file(file, issuer: str) -> Optional[pd.DataFrame]:
     }
     return parsers.get(issuer, lambda f: None)(file)
 
+# ✅✅ 카드사별 파싱 시작
+# ✅✅ 카드사별 파싱 시작
+
 # ✅ 롯데카드
 def parse_lotte(file):
     try:
@@ -208,7 +211,7 @@ def parse_hana(file):
     except:
         return None
 
-# ✅ 삼성카드 (롯데카드 방식 응용)
+# ✅ 삼성카드
 def parse_samsung(file):
     try:
         xls = pd.ExcelFile(file)
@@ -216,7 +219,8 @@ def parse_samsung(file):
         raw = xls.parse(sheet, header=None)
         header_keywords_sets = [
             {"승인일자", "승인시각", "가맹점명", "승인금액(원)"},
-            {"이용일자", "카드번호", "사용처/가맹점", "이용금액"}
+            {"이용일자", "카드번호", "사용처/가맹점", "이용금액"},
+            {"이용일자", "카드번호", "사용처/가맹점", "결제예정금액"},
         ]
 
         for i, row in raw.iterrows():
@@ -233,6 +237,16 @@ def parse_samsung(file):
 
         df.columns = df.columns.str.strip()
 
+        # ✅ 연회비 구조 대응
+        if {"이용일자", "사용처/가맹점", "결제예정금액"}.issubset(set(df.columns)):
+            df = df[["이용일자", "사용처/가맹점", "결제예정금액"]].dropna()
+            df.columns = ["날짜", "사용처", "금액"]
+            df["날짜"] = pd.to_datetime(df["날짜"], errors="coerce").dt.strftime("%Y.%m.%d")
+            df["카드"] = "삼성카드"
+            df["카테고리"] = ""
+            df["금액"] = df["금액"].astype(str).str.replace(",", "").astype(float)
+            return df[["날짜", "카드", "카테고리", "사용처", "금액"]]
+
         # ✅ 리볼빙 구조
         if {"이용일자", "카드번호", "사용처/가맹점", "이용금액"}.issubset(set(df.columns)):
             df = df[["이용일자", "사용처/가맹점", "이용금액"]].dropna()
@@ -243,7 +257,7 @@ def parse_samsung(file):
             df["금액"] = df["금액"].astype(str).str.replace(",", "").astype(float)
             return df[["날짜", "카드", "카테고리", "사용처", "금액"]]
 
-        # ✅ 기존 승인일자 구조
+        # ✅ 승인내역 구조
         if {"승인일자", "승인시각", "가맹점명", "승인금액(원)"}.issubset(set(df.columns)):
             df = df[["승인일자", "승인시각", "가맹점명", "승인금액(원)"]].dropna()
             df["승인금액(원)"] = df["승인금액(원)"].astype(str).str.replace(",", "").astype(int)
@@ -262,6 +276,9 @@ def parse_samsung(file):
     except Exception as e:
         print("[ERROR] parse_samsung 예외 발생:", e)
         return None
+
+# ✅✅ 카드사별 파싱 종료
+# ✅✅ 카드사별 파싱 종료
 
 # ✅ 파일 업로드
 uploaded_files = st.file_uploader(
