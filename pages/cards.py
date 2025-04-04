@@ -337,7 +337,6 @@ if uploaded_files:
                 top=Side(style='thin'), bottom=Side(style='thin')
             )
 
-            # 헤더
             ws.append(df.columns.tolist())
             for cell in ws[1]:
                 cell.fill = PatternFill("solid", fgColor="000000")
@@ -348,7 +347,6 @@ if uploaded_files:
             for row in dataframe_to_rows(df, index=False, header=False):
                 ws.append(row)
 
-            # 열 너비
             for i, width in enumerate([11, 11, 20, 40, 15]):
                 ws.column_dimensions[chr(65 + i)].width = width
             ws.column_dimensions['F'].width = 3
@@ -372,7 +370,7 @@ if uploaded_files:
                 row[0].fill = row[1].fill = PatternFill("solid", fgColor=card_color)
                 row[2].fill = PatternFill("solid", fgColor=cat_color)
 
-            # 카테고리별 통계 테이블
+            # 카테고리별 통계
             ws["G1"] = "카테고리"
             ws["H1"] = "금액"
             ws["G1"].fill = ws["H1"].fill = PatternFill("solid", fgColor="000000")
@@ -400,9 +398,7 @@ if uploaded_files:
             ws[f"G{row_idx}"].alignment = ws[f"H{row_idx}"].alignment = Alignment(horizontal="center", vertical="center")
             ws[f"G{row_idx}"].border = ws[f"H{row_idx}"].border = thin_border
 
-            cat_rows = row_idx - 1
-
-            # 카드사별 통계 테이블
+            # 카드사별 통계
             ws["G10"] = "카드사"
             ws["H10"] = "금액"
             ws["G10"].fill = ws["H10"].fill = PatternFill("solid", fgColor="000000")
@@ -430,7 +426,7 @@ if uploaded_files:
             ws[f"G{row_idx}"].alignment = ws[f"H{row_idx}"].alignment = Alignment(horizontal="center", vertical="center")
             ws[f"G{row_idx}"].border = ws[f"H{row_idx}"].border = thin_border
 
-            # 묶은 가로 막대형 차트로 교체
+            # 묶은 가로 막대형 차트 삽입
             bar1 = BarChart()
             bar1.type = "bar"
             bar1.style = 10
@@ -439,9 +435,8 @@ if uploaded_files:
             bar1.title = None
             bar1.legend = None
             bar1.x_axis.delete = True
-
-            bar1.add_data(Reference(ws, min_col=8, min_row=1, max_row=1 + cat_rows), titles_from_data=True)
-            bar1.set_categories(Reference(ws, min_col=7, min_row=2, max_row=1 + cat_rows))
+            bar1.add_data(Reference(ws, min_col=8, min_row=1, max_row=7), titles_from_data=True)
+            bar1.set_categories(Reference(ws, min_col=7, min_row=2, max_row=7))
             ws.add_chart(bar1, "J1")
 
             bar2 = BarChart()
@@ -452,13 +447,13 @@ if uploaded_files:
             bar2.title = None
             bar2.legend = None
             bar2.x_axis.delete = True
-
             bar2.add_data(Reference(ws, min_col=8, min_row=10, max_row=10 + len(card_list)), titles_from_data=True)
             bar2.set_categories(Reference(ws, min_col=7, min_row=11, max_row=10 + len(card_list)))
             ws.add_chart(bar2, "J14")
 
             ws.page_margins = PageMargins(left=0.5, right=0.5, top=0.75, bottom=0.75)
             ws.sheet_properties = WorksheetProperties(pageSetUpPr=PageSetupProperties(fitToPage=True))
+
             wb.save(output)
             return output.getvalue()
 
