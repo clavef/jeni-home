@@ -322,7 +322,6 @@ if uploaded_files:
             from openpyxl.worksheet.page import PageMargins
             from openpyxl.worksheet.properties import WorksheetProperties, PageSetupProperties
             from openpyxl.chart import PieChart, Reference
-            from openpyxl.chart.series import DataPoint
 
             output = BytesIO()
             wb = Workbook()
@@ -366,8 +365,8 @@ if uploaded_files:
             for row in ws.iter_rows(min_row=2, max_row=ws.max_row):
                 card = row[1].value
                 category = row[2].value
-                card_color = color_map_card.get(card)
-                cat_color = color_map_category.get(category)
+                card_color = color_map_card.get(card, "E7E6E6")
+                cat_color = color_map_category.get(category, "E7E6E6")
                 for idx, cell in enumerate(row):
                     cell.border = thin_border
                     if idx == 4:
@@ -375,10 +374,8 @@ if uploaded_files:
                         cell.alignment = Alignment(horizontal="right", vertical="center")
                     else:
                         cell.alignment = Alignment(horizontal="left", vertical="center")
-                if card_color:
-                    row[0].fill = row[1].fill = PatternFill("solid", fgColor=card_color)
-                if cat_color:
-                    row[2].fill = PatternFill("solid", fgColor=cat_color)
+                row[0].fill = row[1].fill = PatternFill("solid", fgColor=card_color)
+                row[2].fill = PatternFill("solid", fgColor=cat_color)
 
             # 카테고리별 통계
             ws["G1"] = "카테고리"
@@ -387,15 +384,14 @@ if uploaded_files:
             ws["G1"].font = ws["H1"].font = Font(color="FFFFFF", bold=True)
             ws["G1"].alignment = ws["H1"].alignment = Alignment(horizontal="center", vertical="center")
 
-            stats = df.groupby("카테고리")["금액"].sum().reindex(color_map_category.keys()).dropna()
+            stats = df.groupby("카테고리")["금액"].sum()
             row_idx = 2
             for cat, amount in stats.items():
                 ws[f"G{row_idx}"] = cat
                 ws[f"H{row_idx}"] = int(amount)
                 ws[f"H{row_idx}"].number_format = '#,##0'
-                cat_color = color_map_category.get(cat)
-                if cat_color:
-                    ws[f"G{row_idx}"].fill = PatternFill("solid", fgColor=cat_color)
+                cat_color = color_map_category.get(cat, "E7E6E6")
+                ws[f"G{row_idx}"].fill = PatternFill("solid", fgColor=cat_color)
                 ws[f"G{row_idx}"].border = ws[f"H{row_idx}"].border = thin_border
                 row_idx += 1
 
@@ -406,15 +402,14 @@ if uploaded_files:
             ws["G10"].font = ws["H10"].font = Font(color="FFFFFF", bold=True)
             ws["G10"].alignment = ws["H10"].alignment = Alignment(horizontal="center", vertical="center")
 
-            stats2 = df.groupby("카드")["금액"].sum().reindex(color_map_card.keys()).dropna()
+            stats2 = df.groupby("카드")["금액"].sum()
             row_idx = 11
             for card, amount in stats2.items():
                 ws[f"G{row_idx}"] = card
                 ws[f"H{row_idx}"] = int(amount)
                 ws[f"H{row_idx}"].number_format = '#,##0'
-                card_color = color_map_card.get(card)
-                if card_color:
-                    ws[f"G{row_idx}"].fill = PatternFill("solid", fgColor=card_color)
+                card_color = color_map_card.get(card, "E7E6E6")
+                ws[f"G{row_idx}"].fill = PatternFill("solid", fgColor=card_color)
                 ws[f"G{row_idx}"].border = ws[f"H{row_idx}"].border = thin_border
                 row_idx += 1
 
