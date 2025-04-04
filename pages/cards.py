@@ -1,4 +1,4 @@
-# cards.py v24 - 제니앱 카드값 계산기
+# cards.py v25 - 제니앱 카드값 계산기 (막대 그래프)
 
 import streamlit as st
 import pandas as pd
@@ -278,6 +278,18 @@ def parse_samsung(file):
         return None
 
 # ✅✅ 카드사별 파싱 종료
+# ✅✅ 카드사별 파싱 종료
+
+# ✅ 파일 업로드
+uploaded_files = st.file_uploader(
+    "카드사별 이용 내역 파일 업로드 (여러 개 가능)",
+    type=["xlsx"],
+    accept_multiple_files=True
+)
+
+# ✅ 처리 시작
+if uploaded_files:
+    all_records = []
 
 # ✅ 처리 시작
 if uploaded_files:
