@@ -114,7 +114,7 @@ def parse_card_file(file, issuer: str) -> Optional[pd.DataFrame]:
     }
     return parsers.get(issuer, lambda f: None)(file)
 
-# ✅ 롯데카드드
+# ✅ 롯데카드
 def parse_lotte(file):
     try:
         xls = pd.ExcelFile(file)
@@ -248,7 +248,7 @@ def parse_samsung(file):
             df["날짜"] = pd.to_datetime(df["날짜"], errors="coerce").dt.strftime("%Y.%m.%d")
             df["카드"] = "삼성카드"
             df["카테고리"] = ""
-            df["금액"] = pd.to_numeric(df["금액"], errors="coerce")
+            df["금액"] = df["금액"].astype(str).str.replace(",", "").astype(float)
             return df[["날짜", "카드", "카테고리", "사용처", "금액"]]
 
         # ✅ 기존 승인일자 구조
@@ -267,7 +267,8 @@ def parse_samsung(file):
             return df[["날짜", "카드", "카테고리", "사용처", "금액"]]
 
         return None
-    except:
+    except Exception as e:
+        print("[ERROR] parse_samsung 예외 발생:", e)
         return None
 
 # ✅ 파일 업로드
