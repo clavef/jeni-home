@@ -93,17 +93,26 @@ def parse_hyundai(file):
     try:
         xls = pd.ExcelFile(file)
         df = xls.parse(0, skiprows=2)
-
-        st.write("📌 현대카드 원본 데이터 (앞부분)", df.head())
-
         df.columns = df.columns.astype(str).str.strip()
         st.write("📌 정리된 컬럼명:", df.columns.tolist())
 
-        required_cols = {"이용일", "이용가맹점", "이용금액"}
-        if not required_cols.issubset(set(df.columns)):
-            st.error(f"❌ [현대카드] 필수 컬럼 없음: {df.columns.tolist()}")
+        if not {"이용일", "이용가맹점", "이용금액"}.issubset(df.columns):
+            st.error("❌ [현대카드] 필수 컬럼 없음")
             return None
 
+        # ✅ 병합된 문자열에서 숫자 추출
+        def extract_first_number(cell):
+            if isinstance(cell, str):
+                numbers = re.findall(r"\d+", cell)
+                if numbers:
+                    return int(numbers[0])
+                return None
+            elif isinstance(cell, (int, float)):
+                return cell
+            else:
+                return None
+
+        df["이용일"] = df["이용일"].apply(extract_first_number)
         df["이용일"] = pd.to_datetime(df["이용일"], errors="coerce", unit="d", origin="1899-12-30")
         df = df[df["이용일"].notna()]
         df["이용일"] = df["이용일"].dt.strftime("%Y.%m.%d")
@@ -112,12 +121,12 @@ def parse_hyundai(file):
         df.columns = ["날짜", "사용처", "금액"]
         df["카드"] = "현대카드"
         df["카테고리"] = ""
-
         st.success(f"✅ [현대카드] 파싱 성공: {len(df)}건")
         return df[["날짜", "카드", "카테고리", "사용처", "금액"]]
     except Exception as e:
         st.error(f"[ERROR] 현대카드 파싱 오류: {e}")
         return None
+
 
 # ✅ 삼성카드
 def parse_samsung(file):
