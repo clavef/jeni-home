@@ -1,4 +1,4 @@
-# cards.py v25 - 제니앱 카드값 계산기 (막대 그래프)
+# cards.py v26 - 제니앱 카드값 계산기 (날짜 문제 해결 완전판)
 
 import streamlit as st
 import pandas as pd
@@ -11,19 +11,12 @@ show_menu("카드값 계산기")
 
 st.title("💳 카드값 계산기")
 
-st.markdown("""
-### 📝 사용 방법
-
-1. **카드사 자동 인식** 
-   카드사 홈페이지에서 다운로드한 원본 엑셀 파일 그대로 업로드하세요. 
-   시트 구조를 기반으로 자동 인식됩니다.
-
-2. **여러 카드사 파일 동시 업로드 가능** 
-   여러 개의 엑셀 파일을 한꺼번에 업로드해도 자동 통합됩니다.
-
-3. **.xls 구버전은 .xlsx로 변환 필요** 
-   구버전 파일은 Excel에서 '다른 이름으로 저장' 후 사용하세요.
-""")
+# ✅ 날짜 자동 변환 헬퍼
+def safe_excel_date(series):
+    sample = series.dropna().iloc[0] if not series.dropna().empty else None
+    if isinstance(sample, (int, float)):
+        return pd.to_datetime(series, errors="coerce", unit="d", origin="1899-12-30")
+    return pd.to_datetime(series, errors="coerce")
 
 # ✅ 카드사명 정규화
 def normalize_card_name(card):
@@ -36,28 +29,16 @@ def normalize_card_name(card):
 # ✅ 자동 카테고리 분류
 def categorize(merchant: str) -> str:
     merchant = str(merchant)
-
     rules = [
-        # ✅ 교통/주유/주차
         (r"주차장|파킹|빌딩관리단|티머니|택시|에너지|버스|도로|주유|충전|자동차|세차|오토오아시스", "교통/주유/주차"),
-
-        # ✅ 음식점/카페/편의점
         (r"롯데마트|달콤N|매머드|헤이듀|한울곰탕|워커스하이|카페|커피|이디야|스타벅스|편의점|씨유|CU|GS25|세븐일레븐|emart24|올리브영|식당|음식|한솥|고기|김밥|배달", "음식점/카페/편의점"),
-
-        # ✅ 취미/쇼핑
         (r"기프티샷|백화점|인터넷상거래|네이버페이|페이코|PAYPAL|기프티콘|쇼핑|디지털|전자|마켓|Temu|쿠팡|위메프|G마켓|11번가|인터파크|스마트스토어|번개장터", "취미/쇼핑"),
-
-        # ✅ 고정지출
         (r"KCP|보람상조|효성에프엠에스|Microsoft|\(주\)다날\s*-\s*카카오|자동결제|관리비|통신|SKT|KT|LGU\+|렌탈|보험|납부|세금|등록금|교육비|마이데이터|고정지출", "고정지출"),
-
-        # ✅ 병원/약국
         (r"병원|치과|의원|내과|약국|정형외과", "병원/약국"),
     ]
-
     for pattern, category in rules:
         if re.search(pattern, merchant, re.IGNORECASE):
             return category
-
     return "잡비용"
 
 # ✅ 카드사 자동 인식
@@ -72,12 +53,11 @@ def detect_card_issuer(file) -> Optional[str]:
             "현대카드": [{"이용일", "이용가맹점", "이용금액"}],
             "삼성카드": [
                 {"승인일자", "가맹점명", "승인금액(원)"},
-                {"이용일자", "사용처/가맹점", "이용금액"},   # ✅ 리볼빙 형식용
-                {"이용일자", "사용처/가맹점", "결제예정금액"}  # ✅ 연회비용 구조
+                {"이용일자", "사용처/가맹점", "이용금액"},
+                {"이용일자", "사용처/가맹점", "결제예정금액"},
             ],
             "하나카드": [{"거래일자", "가맹점명", "이용금액"}],
         }
-
         for sheet in xls.sheet_names:
             df = xls.parse(sheet, header=None)
             for i in range(min(100, len(df))):
@@ -88,7 +68,6 @@ def detect_card_issuer(file) -> Optional[str]:
                         normed_keywords = set(normalize(k) for k in keyword_set)
                         if normed_keywords.issubset(normed):
                             return issuer
-
         return None
     except Exception as e:
         print("[ERROR] detect_card_issuer 예외 발생:", e)
@@ -108,6 +87,89 @@ def parse_card_file(file, issuer: str) -> Optional[pd.DataFrame]:
 
 # ✅✅ 카드사별 파싱 시작
 # ✅✅ 카드사별 파싱 시작
+
+# ✅ 현대카드
+def parse_hyundai(file):
+    try:
+        df = pd.ExcelFile(file).parse(0, skiprows=2)
+        df = df[~df["이용가맹점"].astype(str).str.contains("합계|소계|총|이월", na=False)]
+        df["이용일"] = safe_excel_date(df["이용일"])
+        df = df[df["이용일"].notna()]
+        df["이용일"] = df["이용일"].dt.strftime("%Y.%m.%d")
+        df = df[["이용일", "이용가맹점", "이용금액"]]
+        df.columns = ["날짜", "사용처", "금액"]
+        df["카드"] = "현대카드"
+        df["카테고리"] = ""
+        return df[["날짜", "카드", "카테고리", "사용처", "금액"]]
+    except Exception as e:
+        print("[ERROR] parse_hyundai 예외:", e)
+        return None
+
+# ✅ 삼성카드
+def parse_samsung(file):
+    try:
+        xls = pd.ExcelFile(file)
+        sheet = xls.sheet_names[0]
+        raw = xls.parse(sheet, header=None)
+        header_keywords_sets = [
+            {"승인일자", "승인시각", "가맹점명", "승인금액(원)"},
+            {"이용일자", "카드번호", "사용처/가맹점", "이용금액"},
+            {"이용일자", "카드번호", "사용처/가맹점", "결제예정금액"},
+        ]
+        for i, row in raw.iterrows():
+            cells = [str(c).strip() for c in row if pd.notna(c)]
+            for header_keywords in header_keywords_sets:
+                if header_keywords.issubset(set(cells)):
+                    df = xls.parse(sheet, skiprows=i)
+                    break
+            else:
+                continue
+            break
+        else:
+            return None
+        df.columns = df.columns.str.strip()
+
+        if {"이용일자", "사용처/가맹점", "결제예정금액"}.issubset(set(df.columns)):
+            df = df[["이용일자", "사용처/가맹점", "결제예정금액"]].dropna()
+            df.columns = ["날짜", "사용처", "금액"]
+            df["날짜"] = safe_excel_date(df["날짜"])
+            df = df[df["날짜"].notna()]
+            df["날짜"] = df["날짜"].dt.strftime("%Y.%m.%d")
+            df["카드"] = "삼성카드"
+            df["카테고리"] = ""
+            df["금액"] = df["금액"].astype(str).str.replace(",", "").astype(float)
+            return df[["날짜", "카드", "카테고리", "사용처", "금액"]]
+
+        if {"이용일자", "카드번호", "사용처/가맹점", "이용금액"}.issubset(set(df.columns)):
+            df = df[["이용일자", "사용처/가맹점", "이용금액"]].dropna()
+            df.columns = ["날짜", "사용처", "금액"]
+            df["날짜"] = safe_excel_date(df["날짜"])
+            df = df[df["날짜"].notna()]
+            df["날짜"] = df["날짜"].dt.strftime("%Y.%m.%d")
+            df["카드"] = "삼성카드"
+            df["카테고리"] = ""
+            df["금액"] = df["금액"].astype(str).str.replace(",", "").astype(float)
+            return df[["날짜", "카드", "카테고리", "사용처", "금액"]]
+
+        if {"승인일자", "승인시각", "가맹점명", "승인금액(원)"}.issubset(set(df.columns)):
+            df = df[["승인일자", "승인시각", "가맹점명", "승인금액(원)"]].dropna()
+            df["승인금액(원)"] = df["승인금액(원)"].astype(str).str.replace(",", "").astype(int)
+            df["매칭키"] = df["승인일자"].astype(str) + "_" + df["승인시각"].astype(str) + "_" + df["승인금액(원)"].abs().astype(str)
+            dupes = df[df.duplicated("매칭키", keep=False)]
+            to_remove = dupes.groupby("매칭키").filter(lambda g: (g["승인금액(원)"] > 0).any() and (g["승인금액(원)"] < 0).any())
+            df = df[~df.index.isin(to_remove.index)]
+            df["날짜"] = safe_excel_date(df["승인일자"])
+            df = df[df["날짜"].notna()]
+            df["날짜"] = df["날짜"].dt.strftime("%Y.%m.%d")
+            df["카드"] = "삼성카드"
+            df["사용처"] = df["가맹점명"]
+            df["금액"] = df["승인금액(원)"]
+            df["카테고리"] = ""
+            return df[["날짜", "카드", "카테고리", "사용처", "금액"]]
+        return None
+    except Exception as e:
+        print("[ERROR] parse_samsung 예외:", e)
+        return None
 
 # ✅ 롯데카드
 def parse_lotte(file):
@@ -174,29 +236,6 @@ def parse_shinhan(file):
     except:
         return None
 
-# ✅ 현대카드
-def parse_hyundai(file):
-    try:
-        df = pd.ExcelFile(file).parse(0, skiprows=2)
-        df = df[~df["이용가맹점"].astype(str).str.contains("합계|소계|총|이월", na=False)]
-
-        # 날짜 타입에 따라 다르게 처리
-        if pd.api.types.is_numeric_dtype(df["이용일"]):
-            df["이용일"] = pd.to_datetime(df["이용일"], unit="d", origin="1899-12-30", errors="coerce")
-        else:
-            df["이용일"] = pd.to_datetime(df["이용일"], errors="coerce")
-        
-        df = df[df["이용일"].notna()]
-        df["이용일"] = df["이용일"].dt.strftime("%Y.%m.%d")
-
-        df = df[["이용일", "이용가맹점", "이용금액"]]
-        df.columns = ["날짜", "사용처", "금액"]
-        df["카드"] = "현대카드"
-        df["카테고리"] = ""
-        return df[["날짜", "카드", "카테고리", "사용처", "금액"]]
-    except:
-        return None
-
 # ✅ 하나카드
 def parse_hana(file):
     try:
@@ -219,78 +258,6 @@ def parse_hana(file):
     except:
         return None
 
-# ✅ 삼성카드
-def parse_samsung(file):
-    try:
-        xls = pd.ExcelFile(file)
-        sheet = xls.sheet_names[0]
-        raw = xls.parse(sheet, header=None)
-        header_keywords_sets = [
-            {"승인일자", "승인시각", "가맹점명", "승인금액(원)"},
-            {"이용일자", "카드번호", "사용처/가맹점", "이용금액"},
-            {"이용일자", "카드번호", "사용처/가맹점", "결제예정금액"},
-        ]
-
-        for i, row in raw.iterrows():
-            cells = [str(c).strip() for c in row if pd.notna(c)]
-            for header_keywords in header_keywords_sets:
-                if header_keywords.issubset(set(cells)):
-                    df = xls.parse(sheet, skiprows=i)
-                    break
-            else:
-                continue
-            break
-        else:
-            return None
-
-        df.columns = df.columns.str.strip()
-
-        # ✅ 연회비 구조
-        if {"이용일자", "사용처/가맹점", "결제예정금액"}.issubset(set(df.columns)):
-            df = df[["이용일자", "사용처/가맹점", "결제예정금액"]].dropna()
-            df.columns = ["날짜", "사용처", "금액"]
-            df["날짜"] = convert_date(df["날짜"])
-            df = df[df["날짜"].notna()]
-            df["날짜"] = df["날짜"].dt.strftime("%Y.%m.%d")
-            df["카드"] = "삼성카드"
-            df["카테고리"] = ""
-            df["금액"] = df["금액"].astype(str).str.replace(",", "").astype(float)
-            return df[["날짜", "카드", "카테고리", "사용처", "금액"]]
-
-        # ✅ 리볼빙 구조
-        if {"이용일자", "카드번호", "사용처/가맹점", "이용금액"}.issubset(set(df.columns)):
-            df = df[["이용일자", "사용처/가맹점", "이용금액"]].dropna()
-            df.columns = ["날짜", "사용처", "금액"]
-            df["날짜"] = convert_date(df["날짜"])
-            df = df[df["날짜"].notna()]
-            df["날짜"] = df["날짜"].dt.strftime("%Y.%m.%d")
-            df["카드"] = "삼성카드"
-            df["카테고리"] = ""
-            df["금액"] = df["금액"].astype(str).str.replace(",", "").astype(float)
-            return df[["날짜", "카드", "카테고리", "사용처", "금액"]]
-
-        # ✅ 승인내역 구조
-        if {"승인일자", "승인시각", "가맹점명", "승인금액(원)"}.issubset(set(df.columns)):
-            df = df[["승인일자", "승인시각", "가맹점명", "승인금액(원)"]].dropna()
-            df["승인금액(원)"] = df["승인금액(원)"].astype(str).str.replace(",", "").astype(int)
-            df["매칭키"] = df["승인일자"].astype(str) + "_" + df["승인시각"].astype(str) + "_" + df["승인금액(원)"].abs().astype(str)
-            dupes = df[df.duplicated("매칭키", keep=False)]
-            to_remove = dupes.groupby("매칭키").filter(lambda g: (g["승인금액(원)"] > 0).any() and (g["승인금액(원)"] < 0).any())
-            df = df[~df.index.isin(to_remove.index)]
-            df["날짜"] = convert_date(df["승인일자"])
-            df = df[df["날짜"].notna()]
-            df["날짜"] = df["날짜"].dt.strftime("%Y.%m.%d")
-            df["카드"] = "삼성카드"
-            df["사용처"] = df["가맹점명"]
-            df["금액"] = df["승인금액(원)"]
-            df["카테고리"] = ""
-            return df[["날짜", "카드", "카테고리", "사용처", "금액"]]
-
-        return None
-    except Exception as e:
-        print("[ERROR] parse_samsung 예외 발생:", e)
-        return None
-
 # ✅✅ 카드사별 파싱 종료
 # ✅✅ 카드사별 파싱 종료
 
@@ -300,10 +267,6 @@ uploaded_files = st.file_uploader(
     type=["xlsx"],
     accept_multiple_files=True
 )
-
-# ✅ 처리 시작
-if uploaded_files:
-    all_records = []
 
 # ✅ 처리 시작
 if uploaded_files:
@@ -363,6 +326,7 @@ if uploaded_files:
                 top=Side(style='thin'), bottom=Side(style='thin')
             )
 
+            # 헤더
             ws.append(df.columns.tolist())
             for cell in ws[1]:
                 cell.fill = PatternFill("solid", fgColor="000000")
@@ -373,6 +337,7 @@ if uploaded_files:
             for row in dataframe_to_rows(df, index=False, header=False):
                 ws.append(row)
 
+            # 열 너비
             for i, width in enumerate([11, 11, 20, 40, 15]):
                 ws.column_dimensions[chr(65 + i)].width = width
             ws.column_dimensions['F'].width = 3
@@ -424,6 +389,8 @@ if uploaded_files:
             ws[f"G{row_idx}"].alignment = ws[f"H{row_idx}"].alignment = Alignment(horizontal="center", vertical="center")
             ws[f"G{row_idx}"].border = ws[f"H{row_idx}"].border = thin_border
 
+            cat_rows = row_idx - 1
+
             # 카드사별 통계
             ws["G10"] = "카드사"
             ws["H10"] = "금액"
@@ -452,40 +419,46 @@ if uploaded_files:
             ws[f"G{row_idx}"].alignment = ws[f"H{row_idx}"].alignment = Alignment(horizontal="center", vertical="center")
             ws[f"G{row_idx}"].border = ws[f"H{row_idx}"].border = thin_border
 
-            # 묶은 가로 막대형 차트 삽입
+            # 막대형 차트 1: 카테고리
             bar1 = BarChart()
             bar1.type = "bar"
             bar1.style = 10
-            bar1.height = 6
-            bar1.width = 6
-            bar1.title = None
+            bar1.y_axis.majorGridlines = None
             bar1.legend = None
+            bar1.title = None
+            bar1.height = 6
+            bar1.width = 5
+            data1 = Reference(ws, min_col=8, min_row=1, max_row=1 + cat_rows)
+            cats1 = Reference(ws, min_col=7, min_row=2, max_row=1 + cat_rows)
+            bar1.add_data(data1, titles_from_data=True)
+            bar1.set_categories(cats1)
             bar1.x_axis.delete = True
-            bar1.add_data(Reference(ws, min_col=8, min_row=1, max_row=7), titles_from_data=True)
-            bar1.set_categories(Reference(ws, min_col=7, min_row=2, max_row=7))
             ws.add_chart(bar1, "J1")
 
+            # 막대형 차트 2: 카드사
             bar2 = BarChart()
             bar2.type = "bar"
             bar2.style = 10
-            bar2.height = 6
-            bar2.width = 6
-            bar2.title = None
+            bar2.y_axis.majorGridlines = None
             bar2.legend = None
+            bar2.title = None
+            bar2.height = 6
+            bar2.width = 5
+            data2 = Reference(ws, min_col=8, min_row=10, max_row=10 + len(card_list))
+            cats2 = Reference(ws, min_col=7, min_row=11, max_row=10 + len(card_list))
+            bar2.add_data(data2, titles_from_data=True)
+            bar2.set_categories(cats2)
             bar2.x_axis.delete = True
-            bar2.add_data(Reference(ws, min_col=8, min_row=10, max_row=10 + len(card_list)), titles_from_data=True)
-            bar2.set_categories(Reference(ws, min_col=7, min_row=11, max_row=10 + len(card_list)))
             ws.add_chart(bar2, "J14")
 
             ws.page_margins = PageMargins(left=0.5, right=0.5, top=0.75, bottom=0.75)
             ws.sheet_properties = WorksheetProperties(pageSetUpPr=PageSetupProperties(fitToPage=True))
-
             wb.save(output)
             return output.getvalue()
 
         st.download_button(
             label="📅 엑셀파일 다운로드",
             data=to_excel(final_df),
-            file_name="제니앱_카드값_계산기.xlsx",
+            file_name="카드값_통합내역.xlsx",
             mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
         )
