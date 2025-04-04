@@ -449,7 +449,7 @@ if uploaded_files:
             pie1.width = 9
             category_colors = ["92D050", "FFC000", "00B0F0", "FF99CC", "FFCC99", "A9D08E", "F4B084"]
             for i, color in enumerate(category_colors):
-                dp = DataPoint()
+                dp = DataPoint(idx=i)
                 dp.graphicalProperties.solidFill = color
                 pie1.series[0].data_points.append(dp)
             ws.add_chart(pie1, "J1")
@@ -462,7 +462,7 @@ if uploaded_files:
             pie2.width = 9
             card_colors = ["FBE2D5", "CCCCFF", "E2EFDA", "DDD9C4", "FFF2CC", "DDEBF7"]
             for i, color in enumerate(card_colors):
-                dp = DataPoint()
+                dp = DataPoint(idx=i)
                 dp.graphicalProperties.solidFill = color
                 pie2.series[0].data_points.append(dp)
             ws.add_chart(pie2, "J14")
