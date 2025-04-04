@@ -286,7 +286,6 @@ uploaded_files = st.file_uploader(
     type=["xlsx"],
     accept_multiple_files=True
 )
-
 # ✅ 처리 시작
 if uploaded_files:
     all_records = []
@@ -457,3 +456,4 @@ if uploaded_files:
             file_name="카드값_통합내역.xlsx",
             mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
         )
+
