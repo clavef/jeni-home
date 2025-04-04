@@ -165,7 +165,7 @@ if uploaded_zip:
                 st.download_button(
                     label="📅 엑셀파일 다운로드",
                     data=output.getvalue(),
-                    file_name="jeniapp_check.xlsx",
+                    file_name="제니앱_인스타_언팔체크.xlsx",
                     mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
                 )
     except Exception as e:
