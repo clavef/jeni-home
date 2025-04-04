@@ -286,6 +286,7 @@ uploaded_files = st.file_uploader(
     type=["xlsx"],
     accept_multiple_files=True
 )
+
 # ✅ 처리 시작
 if uploaded_files:
     all_records = []
@@ -358,6 +359,8 @@ if uploaded_files:
             for i, width in enumerate([11, 11, 20, 40, 15]):
                 ws.column_dimensions[chr(65 + i)].width = width
             ws.column_dimensions['F'].width = 3
+            ws.column_dimensions['G'].width = 18  # G열 카테고리
+            ws.column_dimensions['H'].width = 12  # H열 금액
             ws.column_dimensions['I'].width = 3
             ws.sheet_view.showGridLines = False
 
@@ -389,20 +392,20 @@ if uploaded_files:
                 ws[f"G{row_idx}"] = cat
                 ws[f"H{row_idx}"] = int(amount)
                 ws[f"H{row_idx}"].number_format = '#,##0'
+                ws[f"H{row_idx}"].font = Font(bold=False)
                 cat_color = color_map_category.get(cat, "E7E6E6")
                 ws[f"G{row_idx}"].fill = PatternFill("solid", fgColor=cat_color)
                 ws[f"G{row_idx}"].border = ws[f"H{row_idx}"].border = thin_border
                 row_idx += 1
 
-            # ✅ 카테고리 합계
             ws[f"G{row_idx}"] = "합계"
             ws[f"H{row_idx}"] = int(stats.sum())
             ws[f"G{row_idx}"].fill = ws[f"H{row_idx}"].fill = PatternFill("solid", fgColor="000000")
-            ws[f"G{row_idx}"].font = ws[f"H{row_idx}"].font = Font(color="FFFFFF", bold=True)
+            ws[f"G{row_idx}"].font = ws[f"H{row_idx}"].font = Font(color="FFFFFF")
             ws[f"G{row_idx}"].alignment = ws[f"H{row_idx}"].alignment = Alignment(horizontal="center", vertical="center")
             ws[f"G{row_idx}"].border = ws[f"H{row_idx}"].border = thin_border
 
-            cat_rows = len(stats)
+            cat_rows = row_idx - 1
 
             # 카드사별 통계
             ws["G10"] = "카드사"
@@ -417,20 +420,20 @@ if uploaded_files:
                 ws[f"G{row_idx}"] = card
                 ws[f"H{row_idx}"] = int(amount)
                 ws[f"H{row_idx}"].number_format = '#,##0'
+                ws[f"H{row_idx}"].font = Font(bold=False)
                 card_color = color_map_card.get(card, "E7E6E6")
                 ws[f"G{row_idx}"].fill = PatternFill("solid", fgColor=card_color)
                 ws[f"G{row_idx}"].border = ws[f"H{row_idx}"].border = thin_border
                 row_idx += 1
 
-            # ✅ 카드사 합계
             ws[f"G{row_idx}"] = "합계"
             ws[f"H{row_idx}"] = int(stats2.sum())
             ws[f"G{row_idx}"].fill = ws[f"H{row_idx}"].fill = PatternFill("solid", fgColor="000000")
-            ws[f"G{row_idx}"].font = ws[f"H{row_idx}"].font = Font(color="FFFFFF", bold=True)
+            ws[f"G{row_idx}"].font = ws[f"H{row_idx}"].font = Font(color="FFFFFF")
             ws[f"G{row_idx}"].alignment = ws[f"H{row_idx}"].alignment = Alignment(horizontal="center", vertical="center")
             ws[f"G{row_idx}"].border = ws[f"H{row_idx}"].border = thin_border
 
-            card_rows = len(stats2)
+            card_rows = row_idx - 11
 
             # 원형 차트
             pie1 = PieChart()
@@ -456,4 +459,3 @@ if uploaded_files:
             file_name="카드값_통합내역.xlsx",
             mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
         )
-
