@@ -114,7 +114,7 @@ def parse_card_file(file, issuer: str) -> Optional[pd.DataFrame]:
     }
     return parsers.get(issuer, lambda f: None)(file)
 
-# ✅ 개별 카드사 파서들
+# ✅ 롯데카드드
 def parse_lotte(file):
     try:
         xls = pd.ExcelFile(file)
@@ -216,43 +216,58 @@ def parse_hana(file):
     except:
         return None
 
-# ✅ 삼성카드 파서 수정
+# ✅ 삼성카드 (롯데카드 방식 응용)
 def parse_samsung(file):
     try:
         xls = pd.ExcelFile(file)
+        sheet = xls.sheet_names[0]
+        raw = xls.parse(sheet, header=None)
+        header_keywords_sets = [
+            {"승인일자", "승인시각", "가맹점명", "승인금액(원)"},
+            {"이용일자", "카드번호", "사용처/가맹점", "이용금액"}
+        ]
 
-        # ✅ 새로운 구조 (리볼빙 파일)
-        df = xls.parse(0, skiprows=6)
-        expected_cols = ["이용일자", "카드번호", "사용처/가맹점", "이용금액"]
-        if all(col in df.columns for col in expected_cols):
-            df = df[expected_cols].dropna()
-            df = df.rename(columns={"이용일자": "날짜", "사용처/가맹점": "사용처", "이용금액": "금액"})
+        for i, row in raw.iterrows():
+            cells = [str(c).strip() for c in row if pd.notna(c)]
+            for header_keywords in header_keywords_sets:
+                if header_keywords.issubset(set(cells)):
+                    df = xls.parse(sheet, skiprows=i)
+                    break
+            else:
+                continue
+            break
+        else:
+            return None
+
+        df.columns = df.columns.str.strip()
+
+        # ✅ 리볼빙 구조
+        if {"이용일자", "카드번호", "사용처/가맹점", "이용금액"}.issubset(set(df.columns)):
+            df = df[["이용일자", "사용처/가맹점", "이용금액"]].dropna()
+            df.columns = ["날짜", "사용처", "금액"]
             df["날짜"] = pd.to_datetime(df["날짜"], errors="coerce").dt.strftime("%Y.%m.%d")
             df["카드"] = "삼성카드"
             df["카테고리"] = ""
             df["금액"] = pd.to_numeric(df["금액"], errors="coerce")
             return df[["날짜", "카드", "카테고리", "사용처", "금액"]]
 
-        # ✅ 기존 구조도 병행 지원 (예전 승인일자 방식)
-        if len(xls.sheet_names) > 1:
-            df2 = xls.parse(1)
-            if set(["승인일자", "승인시각", "가맹점명", "승인금액(원)"]).issubset(df2.columns):
-                df2 = df2[["승인일자", "승인시각", "가맹점명", "승인금액(원)"]].dropna()
-                df2["승인금액(원)"] = df2["승인금액(원)"].astype(str).str.replace(",", "").astype(int)
-                df2["매칭키"] = df2["승인일자"].astype(str) + "_" + df2["승인시각"].astype(str) + "_" + df2["승인금액(원)"].abs().astype(str)
-                dupes = df2[df2.duplicated("매칭키", keep=False)]
-                to_remove = dupes.groupby("매칭키").filter(lambda g: (g["승인금액(원)"] > 0).any() and (g["승인금액(원)"] < 0).any())
-                df2 = df2[~df2.index.isin(to_remove.index)]
-                df2["날짜"] = pd.to_datetime(df2["승인일자"]).dt.strftime("%Y.%m.%d")
-                df2["카드"] = "삼성카드"
-                df2["사용처"] = df2["가맹점명"]
-                df2["금액"] = df2["승인금액(원)"]
-                df2["카테고리"] = ""
-                return df2[["날짜", "카드", "카테고리", "사용처", "금액"]]
+        # ✅ 기존 승인일자 구조
+        if {"승인일자", "승인시각", "가맹점명", "승인금액(원)"}.issubset(set(df.columns)):
+            df = df[["승인일자", "승인시각", "가맹점명", "승인금액(원)"]].dropna()
+            df["승인금액(원)"] = df["승인금액(원)"].astype(str).str.replace(",", "").astype(int)
+            df["매칭키"] = df["승인일자"].astype(str) + "_" + df["승인시각"].astype(str) + "_" + df["승인금액(원)"].abs().astype(str)
+            dupes = df[df.duplicated("매칭키", keep=False)]
+            to_remove = dupes.groupby("매칭키").filter(lambda g: (g["승인금액(원)"] > 0).any() and (g["승인금액(원)"] < 0).any())
+            df = df[~df.index.isin(to_remove.index)]
+            df["날짜"] = pd.to_datetime(df["승인일자"]).dt.strftime("%Y.%m.%d")
+            df["카드"] = "삼성카드"
+            df["사용처"] = df["가맹점명"]
+            df["금액"] = df["승인금액(원)"]
+            df["카테고리"] = ""
+            return df[["날짜", "카드", "카테고리", "사용처", "금액"]]
 
         return None
-    except Exception as e:
-        print("[ERROR] parse_samsung 예외 발생:", e)
+    except:
         return None
 
 # ✅ 파일 업로드
