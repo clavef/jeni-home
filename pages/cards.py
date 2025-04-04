@@ -380,7 +380,7 @@ if uploaded_files:
                 row[0].fill = row[1].fill = PatternFill("solid", fgColor=card_color)
                 row[2].fill = PatternFill("solid", fgColor=cat_color)
 
-            # 카테고리별 통계 테이블
+            # 카테고리별 통계
             ws["G1"] = "카테고리"
             ws["H1"] = "금액"
             ws["G1"].fill = ws["H1"].fill = PatternFill("solid", fgColor="000000")
@@ -410,7 +410,7 @@ if uploaded_files:
 
             cat_rows = row_idx - 1
 
-            # 카드사별 통계 테이블
+            # 카드사별 통계
             ws["G10"] = "카드사"
             ws["H10"] = "금액"
             ws["G10"].fill = ws["H10"].fill = PatternFill("solid", fgColor="000000")
@@ -438,31 +438,36 @@ if uploaded_files:
             ws[f"G{row_idx}"].alignment = ws[f"H{row_idx}"].alignment = Alignment(horizontal="center", vertical="center")
             ws[f"G{row_idx}"].border = ws[f"H{row_idx}"].border = thin_border
 
-            # 묶은 가로 막대형 차트로 교체
+            # 막대형 차트 1: 카테고리
             bar1 = BarChart()
             bar1.type = "bar"
             bar1.style = 10
-            bar1.height = 6
-            bar1.width = 6
-            bar1.title = None
+            bar1.y_axis.majorGridlines = None
             bar1.legend = None
+            bar1.title = None
+            bar1.height = 6
+            bar1.width = 5
+            data1 = Reference(ws, min_col=8, min_row=1, max_row=1 + cat_rows)
+            cats1 = Reference(ws, min_col=7, min_row=2, max_row=1 + cat_rows)
+            bar1.add_data(data1, titles_from_data=True)
+            bar1.set_categories(cats1)
             bar1.x_axis.delete = True
-
-            bar1.add_data(Reference(ws, min_col=8, min_row=1, max_row=1 + cat_rows), titles_from_data=True)
-            bar1.set_categories(Reference(ws, min_col=7, min_row=2, max_row=1 + cat_rows))
             ws.add_chart(bar1, "J1")
 
+            # 막대형 차트 2: 카드사
             bar2 = BarChart()
             bar2.type = "bar"
             bar2.style = 10
-            bar2.height = 6
-            bar2.width = 6
-            bar2.title = None
+            bar2.y_axis.majorGridlines = None
             bar2.legend = None
+            bar2.title = None
+            bar2.height = 6
+            bar2.width = 5
+            data2 = Reference(ws, min_col=8, min_row=10, max_row=10 + len(card_list))
+            cats2 = Reference(ws, min_col=7, min_row=11, max_row=10 + len(card_list))
+            bar2.add_data(data2, titles_from_data=True)
+            bar2.set_categories(cats2)
             bar2.x_axis.delete = True
-
-            bar2.add_data(Reference(ws, min_col=8, min_row=10, max_row=10 + len(card_list)), titles_from_data=True)
-            bar2.set_categories(Reference(ws, min_col=7, min_row=11, max_row=10 + len(card_list)))
             ws.add_chart(bar2, "J14")
 
             ws.page_margins = PageMargins(left=0.5, right=0.5, top=0.75, bottom=0.75)
@@ -476,4 +481,3 @@ if uploaded_files:
             file_name="카드값_통합내역.xlsx",
             mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
         )
-
