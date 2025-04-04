@@ -457,8 +457,8 @@ if uploaded_files:
 
             pie2 = PieChart()
             pie2.title = "카드사별 사용 비중"
-            pie2.add_data(Reference(ws, min_col=8, min_row=10, max_row=9 + card_rows), titles_from_data=True)
-            pie2.set_categories(Reference(ws, min_col=7, min_row=11, max_row=9 + card_rows))
+            pie2.add_data(Reference(ws, min_col=8, min_row=10, max_row=10 + len(card_list)), titles_from_data=True)
+            pie2.set_categories(Reference(ws, min_col=7, min_row=11, max_row=10 + len(card_list)))
             pie2.height = 7
             pie2.width = 9
             card_colors = ["FBE2D5", "DDEBF7", "CCCCFF", "E2EFDA", "FFF2CC", "DDD9C4"]
