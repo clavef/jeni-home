@@ -154,6 +154,7 @@ def parse_samsung(file):
                 if header_keywords.issubset(set(cells)):
                     st.success(f"✅ 삼성카드 헤더 발견 at row {i}: {header_keywords}")
                     df = xls.parse(sheet, skiprows=i)
+                    df.columns = df.columns.astype(str).str.strip()
                     break
             if df is not None:
                 break
@@ -162,32 +163,56 @@ def parse_samsung(file):
             st.error("❌ 삼성카드 헤더 탐지 실패")
             return None
 
-        df.columns = df.columns.astype(str).str.strip()
-
-        # ✅ 컬럼 실제 리스트 확인
         st.subheader("📋 삼성카드 실컬럼명")
         st.code("\n".join(df.columns.tolist()), language="text")
 
         # ✅ 승인내역 구조
         if {"승인일자", "승인시각", "가맹점명", "승인금액(원)"}.issubset(set(df.columns)):
             st.info("🧭 승인내역 구조 감지됨")
-            return None  # 일단 구조 감지까지만
+            df = df[["승인일자", "승인시각", "가맹점명", "승인금액(원)"]].copy()
+            df["승인일자"] = df["승인일자"].apply(extract_excel_date)
+            df["날짜"] = pd.to_datetime(df["승인일자"], errors="coerce", unit="d", origin="1899-12-30")
+            df = df[df["날짜"].notna()]
+            df["날짜"] = df["날짜"].dt.strftime("%Y.%m.%d")
+            df["사용처"] = df["가맹점명"]
+            df["금액"] = df["승인금액(원)"].astype(str).str.replace(",", "").astype(float)
+            df["카드"] = "삼성카드"
+            df["카테고리"] = ""
+            return df[["날짜", "카드", "카테고리", "사용처", "금액"]]
 
         # ✅ 리볼빙 구조
         if {"이용일자", "카드번호", "사용처/가맹점", "이용금액"}.issubset(set(df.columns)):
             st.info("🧭 리볼빙 구조 감지됨")
-            return None  # 일단 구조 감지까지만
+            df = df[["이용일자", "사용처/가맹점", "이용금액"]].copy()
+            df.columns = ["날짜", "사용처", "금액"]
+            df["날짜"] = df["날짜"].apply(extract_excel_date)
+            df["날짜"] = pd.to_datetime(df["날짜"], errors="coerce", unit="d", origin="1899-12-30")
+            df = df[df["날짜"].notna()]
+            df["날짜"] = df["날짜"].dt.strftime("%Y.%m.%d")
+            df["금액"] = df["금액"].astype(str).str.replace(",", "").astype(float)
+            df["카드"] = "삼성카드"
+            df["카테고리"] = ""
+            return df[["날짜", "카드", "카테고리", "사용처", "금액"]]
 
         # ✅ 연회비 구조
         if {"이용일자", "사용처/가맹점", "결제예정금액"}.issubset(set(df.columns)):
             st.info("🧭 연회비 구조 감지됨")
-            return None  # 일단 구조 감지까지만
+            df = df[["이용일자", "사용처/가맹점", "결제예정금액"]].copy()
+            df.columns = ["날짜", "사용처", "금액"]
+            df["날짜"] = df["날짜"].apply(extract_excel_date)
+            df["날짜"] = pd.to_datetime(df["날짜"], errors="coerce", unit="d", origin="1899-12-30")
+            df = df[df["날짜"].notna()]
+            df["날짜"] = df["날짜"].dt.strftime("%Y.%m.%d")
+            df["금액"] = df["금액"].astype(str).str.replace(",", "").astype(float)
+            df["카드"] = "삼성카드"
+            df["카테고리"] = ""
+            return df[["날짜", "카드", "카테고리", "사용처", "금액"]]
 
         st.warning("⚠️ 어떤 구조와도 일치하지 않음")
         return None
 
     except Exception as e:
-        st.error(f"[ERROR] 삼성카드 디버깅 예외: {e}")
+        st.error(f"[ERROR] 삼성카드 파싱 예외 발생: {e}")
         return None
 
 # ✅ 롯데카드
